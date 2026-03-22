@@ -1,20 +1,29 @@
 # TempID — Tempo Name Service
 
-Tempo blockchain üzerinde `.tempo` isimlerini kaydedin. Uzun cüzdan adresleri yerine `fatih.tempo` gibi okunabilir isimler kullanın.
+Register `.tempo` names on the Tempo blockchain. Use human-readable names like `fatih.tempo` instead of long wallet addresses.
 
-**Domain:** tempoid.xyz
-**Chain:** Tempo (EVM-uyumlu)
-**Ödeme:** pathUSD (TIP-20 stablecoin)
+**Website:** [tempoid.xyz](https://tempoid.xyz)
+**Chain:** Tempo (EVM-compatible, Chain ID 4217)
+**Payment:** pathUSD (TIP-20 stablecoin, 6 decimals)
+**Contract:** `0x199002DBDe63764596101EcEcae9Dc6dc29cE168`
 
-## Fiyatlandırma
+## Pricing
 
-| Karakter Uzunluğu | Yıllık Ücret |
-|--------------------|-------------|
-| 3 karakter         | $20 pathUSD |
-| 4 karakter         | $5 pathUSD  |
-| 5+ karakter        | $1 pathUSD  |
+| Name Length | Annual Fee |
+|-------------|------------|
+| 3 characters | $20 pathUSD |
+| 4 characters | $5 pathUSD |
+| 5+ characters | $1 pathUSD |
 
-## Proje Yapısı
+## Features
+
+- **Name Registration** — Register `.tempo` names with pathUSD
+- **Name Resolution** — Resolve names to addresses and reverse lookup
+- **Send via Name** — Send pathUSD to any `.tempo` name
+- **Marketplace** — Buy and sell registered names (2.5% commission)
+- **Metadata** — Set avatar, twitter, website on your name profile
+
+## Project Structure
 
 ```
 tempoid/
@@ -23,68 +32,38 @@ tempoid/
 │   ├── test/TempoNameService.t.sol
 │   └── script/Deploy.s.sol
 ├── frontend/           # Next.js 14 (App Router)
-│   ├── app/            # Sayfalar
-│   ├── components/     # UI bileşenleri
+│   ├── app/            # Pages
+│   ├── components/     # UI components
 │   ├── hooks/          # Wagmi hooks
 │   └── lib/            # Config & utils
 └── README.md
 ```
 
-## Kurulum & Deploy
+## Setup
 
-### 1. tempo-foundry kur
+### Contract
 
 ```bash
+# Install tempo-foundry
 foundryup -n tempo
-```
 
-### 2. Contract'ı derle
-
-```bash
+# Build & test
 cd contracts
 forge install OpenZeppelin/openzeppelin-contracts
 forge build
-```
-
-### 3. Testleri çalıştır
-
-```bash
 forge test -vvv
-```
 
-### 4. Testnet faucet (Moderato)
-
-```bash
-cast rpc tempo_fundAddress YOUR_ADDRESS --rpc-url https://rpc.moderato.tempo.xyz
-```
-
-### 5. Testnet'e deploy et
-
-```bash
+# Deploy to mainnet
 forge create src/TempoNameService.sol:TempoNameService \
-  --constructor-args 0x20c0000000000000000000000000000000000000 \
-  --tempo.fee-token 0x20c0000000000000000000000000000000000000 \
-  --rpc-url https://rpc.moderato.tempo.xyz \
-  --interactive \
-  --broadcast \
-  --verify
-```
-
-Deploy çıktısından contract adresini `frontend/lib/contract.ts` dosyasındaki `TEMPO_NAME_SERVICE_ADDRESS` değişkenine yapıştırın.
-
-### 6. Mainnet'e deploy et
-
-```bash
-forge create src/TempoNameService.sol:TempoNameService \
-  --constructor-args 0x20c0000000000000000000000000000000000000 \
-  --tempo.fee-token 0x20c0000000000000000000000000000000000000 \
   --rpc-url https://rpc.tempo.xyz \
   --interactive \
   --broadcast \
-  --verify
+  --verify \
+  --tempo.fee-token 0x20c0000000000000000000000000000000000000 \
+  --constructor-args 0x20c0000000000000000000000000000000000000
 ```
 
-### 7. Frontend'i çalıştır
+### Frontend
 
 ```bash
 cd frontend
@@ -92,43 +71,35 @@ npm install
 npm run dev
 ```
 
-Tarayıcıda `http://localhost:3000` adresini açın.
-
-## Akış
-
-1. Kullanıcı arama kutusuna isim yazar (ör. `fatih`)
-2. `.tempo` otomatik eklenir, müsaitlik kontrol edilir
-3. Müsaitse kayıt sayfasına yönlendirilir
-4. Süre seçer (1/2/3 yıl), toplam ücret gösterilir
-5. **Adım 1:** pathUSD approve (ERC-20 onayı)
-6. **Adım 2:** register (isim kaydı)
-7. Profil sayfasında isim, sahip, bitiş tarihi ve metadata görüntülenir
-
-## Ağ Bilgileri
+## Network Info
 
 | | Mainnet | Testnet (Moderato) |
 |---|---|---|
 | Chain ID | 4217 | 42431 |
 | RPC | https://rpc.tempo.xyz | https://rpc.moderato.tempo.xyz |
 | Explorer | https://explore.tempo.xyz | https://explore.tempo.xyz |
-| pathUSD | `0x20c0000000000000000000000000000000000000` | Aynı |
+| pathUSD | `0x20c0000000000000000000000000000000000000` | Same |
 
-## Smart Contract Fonksiyonları
+## Smart Contract Functions
 
-- `register(name, owner, years)` — İsim kaydı
-- `resolve(name)` — İsmi adrese çevir
-- `reverseLookup(address)` — Adresi isme çevir (primary)
-- `renew(name, years)` — Süre uzat
-- `transfer(name, newOwner)` — İsmi devret
-- `setPrimaryName(name)` — Primary name belirle
-- `setMetadata(name, key, value)` — Metadata ekle (avatar, twitter, website...)
-- `getNameInfo(name)` — İsim detayları
-- `isNameAvailable(name)` — Müsaitlik kontrolü
-- `getRegistrationFee(name, years)` — Ücret hesapla
+- `register(name, owner, years)` — Register a name
+- `resolve(name)` — Resolve name to address
+- `reverseLookup(address)` — Reverse lookup (primary name)
+- `renew(name, years)` — Extend registration
+- `transfer(name, newOwner)` — Transfer ownership
+- `setPrimaryName(name)` — Set primary name
+- `setMetadata(name, key, value)` — Set metadata (avatar, twitter, website...)
+- `listForSale(name, price)` — List name on marketplace
+- `buyName(name)` — Buy a listed name
+- `withdraw()` — Owner withdraws collected fees
 
-## Teknoloji
+## Tech Stack
 
 - **Contract:** Solidity 0.8.24, OpenZeppelin, tempo-foundry
 - **Frontend:** Next.js 14, TypeScript, Tailwind CSS
 - **Web3:** Viem v2.43.0+, Wagmi v2.14.0+
-- **Ödeme:** pathUSD (TIP-20)
+- **Payment:** pathUSD (TIP-20, 6 decimals)
+
+## License
+
+MIT
