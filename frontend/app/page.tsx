@@ -172,21 +172,21 @@ export default function WaitlistPage() {
           )}
         </div>
 
-        {/* Counter */}
+        {/* Counter - uncomment when ready to show count
         {mounted && waitlistCount > 0 && (
           <div className="mt-8 md:mt-10">
             <div className="inline-flex items-center gap-3 px-6 py-3 bg-white border border-border">
               <div className="flex -space-x-2">
-                {[...Array(4)].map((_, i) => (
+                {[...Array(5)].map((_, i) => (
                   <div
                     key={i}
-                    className="w-6 h-6 border-2 border-white bg-gray-200 flex items-center justify-center"
+                    className="w-6 h-6 border-2 border-white flex items-center justify-center"
                     style={{
-                      backgroundColor: ["#E5E5E5", "#D4D4D4", "#C4C4C4", "#B4B4B4"][i],
+                      backgroundColor: ["#E5E5E5", "#D4D4D4", "#C4C4C4", "#B4B4B4", "#A4A4A4"][i],
                     }}
                   >
                     <span className="text-[8px] text-gray-600 font-medium">
-                      {["T", "E", "M", "P"][i]}
+                      {["T", "E", "M", "P", "O"][i]}
                     </span>
                   </div>
                 ))}
@@ -198,6 +198,7 @@ export default function WaitlistPage() {
             </div>
           </div>
         )}
+        */}
       </div>
 
       {/* Features Preview */}
