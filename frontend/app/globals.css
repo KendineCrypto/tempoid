@@ -1,0 +1,46 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Inter:wght@400;450;500;600&display=swap');
+
+:root {
+  --color-bg: #F3F3F3;
+  --color-white: #FFFFFF;
+  --color-black: #000000;
+  --color-gray-100: #F2F2F2;
+  --color-gray-200: #D9D9D9;
+  --color-gray-300: #CCCCCC;
+  --color-gray-400: #B2B2B2;
+  --color-gray-500: #999999;
+  --color-gray-600: #808080;
+  --color-gray-700: #4D4D4D;
+  --color-gray-800: #333333;
+  --color-gray-900: #262626;
+  --color-gray-1000: #1A1A1A;
+  --color-gray-1100: #0D0D0D;
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-black);
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+h1, h2, h3 {
+  font-family: 'DM Serif Display', Georgia, serif;
+  font-weight: 400;
+  letter-spacing: -0.03em;
+  line-height: 1.0;
+}
+
+/* Sharp focus styles */
+*:focus-visible {
+  outline: 2px solid var(--color-gray-1100);
+  outline-offset: 2px;
+}
+
+::selection {
+  background: var(--color-gray-1100);
+  color: var(--color-white);
+}
