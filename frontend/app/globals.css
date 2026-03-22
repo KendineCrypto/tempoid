@@ -44,3 +44,19 @@ h1, h2, h3 {
   background: var(--color-gray-1100);
   color: var(--color-white);
 }
+
+/* Confetti animation */
+@keyframes fall {
+  0% {
+    transform: translateY(0) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100vh) rotate(720deg);
+    opacity: 0;
+  }
+}
+
+.animate-fall {
+  animation: fall linear forwards;
+}

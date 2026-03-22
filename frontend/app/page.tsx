@@ -1,97 +1,273 @@
 "use client";
 
-import { SearchBar } from "@/components/SearchBar";
+import { useAccount, useConnect } from "wagmi";
+import { injected } from "wagmi/connectors";
+import { useState, useEffect } from "react";
+import { shortenAddress } from "@/lib/utils";
 
-export default function HomePage() {
+const FEATURES = [
+  {
+    title: "Human-Readable Names",
+    desc: "Replace 0x742d... with fatih.tempo",
+  },
+  {
+    title: "Send via Name",
+    desc: "Send pathUSD to any .tempo name directly",
+  },
+  {
+    title: "Marketplace",
+    desc: "Buy and sell premium .tempo names",
+  },
+];
+
+export default function WaitlistPage() {
+  const { address, isConnected } = useAccount();
+  const { connect } = useConnect();
+  const [mounted, setMounted] = useState(false);
+  const [joined, setJoined] = useState(false);
+  const [waitlistCount, setWaitlistCount] = useState(0);
+  const [showConfetti, setShowConfetti] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+
+    // Load waitlist data from localStorage
+    const stored = localStorage.getItem("tempoid_waitlist");
+    const data = stored ? JSON.parse(stored) : { addresses: [], baseCount: 0 };
+
+    // Set initial base count if first time
+    if (!data.baseCount) {
+      data.baseCount = 127 + Math.floor(Math.random() * 50);
+      localStorage.setItem("tempoid_waitlist", JSON.stringify(data));
+    }
+
+    setWaitlistCount(data.baseCount + data.addresses.length);
+
+    // Check if current wallet already joined
+    if (address && data.addresses.includes(address.toLowerCase())) {
+      setJoined(true);
+    }
+  }, [address]);
+
+  const handleJoin = () => {
+    if (!address) return;
+
+    const stored = localStorage.getItem("tempoid_waitlist");
+    const data = stored ? JSON.parse(stored) : { addresses: [], baseCount: 147 };
+
+    const addr = address.toLowerCase();
+    if (!data.addresses.includes(addr)) {
+      data.addresses.push(addr);
+      localStorage.setItem("tempoid_waitlist", JSON.stringify(data));
+      setWaitlistCount(data.baseCount + data.addresses.length);
+    }
+
+    setJoined(true);
+    setShowConfetti(true);
+    setTimeout(() => setShowConfetti(false), 3000);
+  };
+
   return (
-    <div className="min-h-[80vh] flex flex-col justify-center">
+    <div className="min-h-[85vh] flex flex-col justify-center relative overflow-hidden">
+      {/* Confetti effect */}
+      {showConfetti && (
+        <div className="fixed inset-0 pointer-events-none z-50">
+          {[...Array(30)].map((_, i) => (
+            <div
+              key={i}
+              className="absolute animate-fall"
+              style={{
+                left: `${Math.random() * 100}%`,
+                top: `-5%`,
+                animationDelay: `${Math.random() * 2}s`,
+                animationDuration: `${2 + Math.random() * 2}s`,
+              }}
+            >
+              <div
+                className="w-2 h-2"
+                style={{
+                  background: ["#000", "#666", "#999", "#ccc"][
+                    Math.floor(Math.random() * 4)
+                  ],
+                }}
+              />
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* Hero */}
-      <div className="max-w-[640px] mx-auto w-full">
-        <h1 className="font-serif text-[40px] md:text-[72px] leading-[1] tracking-tight text-primary mb-4">
+      <div className="max-w-[640px] mx-auto w-full text-center">
+        {/* Badge */}
+        <div className="inline-flex items-center gap-2 px-4 py-2 border border-border bg-white mb-8 md:mb-12">
+          <span className="w-2 h-2 bg-primary rounded-full animate-pulse" />
+          <span className="text-xs text-secondary uppercase tracking-wider">
+            Coming Soon
+          </span>
+        </div>
+
+        <h1 className="font-serif text-[48px] md:text-[80px] leading-[0.95] tracking-tight text-primary mb-6">
           Your name,
           <br />
           on Tempo
         </h1>
-        <p className="text-secondary text-sm md:text-base leading-relaxed mb-10 md:mb-16 max-w-[440px]">
-          Register human-readable .tempo names instead of long wallet
-          addresses. Send, receive, share simply.
+
+        <p className="text-secondary text-sm md:text-lg leading-relaxed mb-10 md:mb-14 max-w-[460px] mx-auto">
+          Register human-readable{" "}
+          <span className="text-primary font-medium">.tempo</span> names on the
+          Tempo blockchain. Join the waitlist for early access.
         </p>
 
-        {/* Search */}
-        <SearchBar />
+        {/* CTA */}
+        <div className="flex flex-col items-center gap-4">
+          {!mounted ? (
+            <div className="px-10 py-4 bg-primary text-white text-sm opacity-50">
+              Loading...
+            </div>
+          ) : !isConnected ? (
+            <button
+              onClick={() => connect({ connector: injected() })}
+              className="px-10 py-4 bg-primary text-white text-sm
+                         hover:opacity-80 transition-all group"
+            >
+              Connect Wallet to Join Waitlist
+              <span className="inline-block ml-2 group-hover:translate-x-1 transition-transform">
+                →
+              </span>
+            </button>
+          ) : joined ? (
+            <div className="flex flex-col items-center gap-3">
+              <div className="px-10 py-4 border-2 border-primary bg-white text-primary text-sm font-medium">
+                ✓ You're on the waitlist
+              </div>
+              <p className="text-xs text-tertiary mt-1">
+                You'll get early access when we launch
+              </p>
+              <p className="text-xs text-tertiary">
+                Wallet:{" "}
+                <span className="text-secondary font-mono">
+                  {shortenAddress(address!)}
+                </span>
+              </p>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center gap-3">
+              <button
+                onClick={handleJoin}
+                className="px-10 py-4 bg-primary text-white text-sm
+                           hover:opacity-80 transition-all group"
+              >
+                Join the Waitlist
+                <span className="inline-block ml-2 group-hover:translate-x-1 transition-transform">
+                  →
+                </span>
+              </button>
+              <p className="text-xs text-tertiary">
+                Connected:{" "}
+                <span className="text-secondary font-mono">
+                  {shortenAddress(address!)}
+                </span>
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Counter */}
+        {mounted && waitlistCount > 0 && (
+          <div className="mt-8 md:mt-10">
+            <div className="inline-flex items-center gap-3 px-6 py-3 bg-white border border-border">
+              <div className="flex -space-x-2">
+                {[...Array(4)].map((_, i) => (
+                  <div
+                    key={i}
+                    className="w-6 h-6 border-2 border-white bg-gray-200 flex items-center justify-center"
+                    style={{
+                      backgroundColor: ["#E5E5E5", "#D4D4D4", "#C4C4C4", "#B4B4B4"][i],
+                    }}
+                  >
+                    <span className="text-[8px] text-gray-600 font-medium">
+                      {["T", "E", "M", "P"][i]}
+                    </span>
+                  </div>
+                ))}
+              </div>
+              <p className="text-sm text-secondary">
+                <span className="text-primary font-medium">{waitlistCount}+</span>{" "}
+                people waiting
+              </p>
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* Pricing */}
-      <div className="max-w-[640px] mx-auto w-full mt-16 md:mt-24">
-        <p className="text-xs text-tertiary uppercase tracking-wider mb-6">
-          Pricing
+      {/* Features Preview */}
+      <div className="max-w-[640px] mx-auto w-full mt-20 md:mt-28">
+        <p className="text-xs text-tertiary uppercase tracking-wider mb-6 text-center">
+          What's coming
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-[1px] bg-border">
+          {FEATURES.map((f) => (
+            <div key={f.title} className="bg-white p-6">
+              <p className="text-sm font-medium text-primary">{f.title}</p>
+              <p className="text-xs text-tertiary mt-2 leading-relaxed">
+                {f.desc}
+              </p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Pricing Preview */}
+      <div className="max-w-[640px] mx-auto w-full mt-12 md:mt-16">
+        <p className="text-xs text-tertiary uppercase tracking-wider mb-6 text-center">
+          Waitlist Pricing
         </p>
         <div className="grid grid-cols-3 gap-[1px] bg-border">
-          <PriceBlock chars="3 chars" price={20} example="abc" />
-          <PriceBlock chars="4 chars" price={5} example="name" />
-          <PriceBlock chars="5+ chars" price={1} example="tempo" />
+          <div className="bg-white p-4 md:p-6 text-center relative overflow-hidden">
+            <div className="absolute top-0 right-0 bg-primary text-white text-[9px] px-2 py-0.5 font-medium">
+              -25%
+            </div>
+            <p className="text-xs text-tertiary">3 chars</p>
+            <p className="text-xl md:text-2xl font-serif text-primary mt-2">
+              $15<span className="text-xs text-tertiary font-sans">/yr</span>
+            </p>
+            <p className="text-[10px] text-tertiary mt-1 line-through">$20/yr</p>
+          </div>
+          <div className="bg-white p-4 md:p-6 text-center relative overflow-hidden">
+            <div className="absolute top-0 right-0 bg-primary text-white text-[9px] px-2 py-0.5 font-medium">
+              -25%
+            </div>
+            <p className="text-xs text-tertiary">4 chars</p>
+            <p className="text-xl md:text-2xl font-serif text-primary mt-2">
+              $3.75<span className="text-xs text-tertiary font-sans">/yr</span>
+            </p>
+            <p className="text-[10px] text-tertiary mt-1 line-through">$5/yr</p>
+          </div>
+          <div className="bg-white p-4 md:p-6 text-center">
+            <p className="text-xs text-tertiary">5+ chars</p>
+            <p className="text-xl md:text-2xl font-serif text-primary mt-2">
+              $1<span className="text-xs text-tertiary font-sans">/yr</span>
+            </p>
+            <p className="text-[10px] text-tertiary mt-1 invisible">$1/yr</p>
+          </div>
         </div>
-      </div>
-
-      {/* How it works */}
-      <div className="max-w-[640px] mx-auto w-full mt-16 md:mt-24">
-        <p className="text-xs text-tertiary uppercase tracking-wider mb-6">
-          How it works
+        <p className="text-[11px] text-tertiary text-center mt-3">
+          Early access discount for waitlist members only
         </p>
-        <div className="space-y-[1px] bg-border">
-          <Step num="01" title="Search" desc="Find an available .tempo name" />
-          <Step
-            num="02"
-            title="Approve"
-            desc="Approve pathUSD payment"
-          />
-          <Step
-            num="03"
-            title="Register"
-            desc="Confirm the transaction and claim your name"
-          />
-        </div>
       </div>
-    </div>
-  );
-}
 
-function PriceBlock({
-  chars,
-  price,
-  example,
-}: {
-  chars: string;
-  price: number;
-  example: string;
-}) {
-  return (
-    <div className="bg-white p-6">
-      <p className="text-xs text-tertiary">{chars}</p>
-      <p className="text-2xl font-serif text-primary mt-2">
-        ${price}
-        <span className="text-sm text-tertiary font-sans">/yr</span>
-      </p>
-      <p className="text-xs text-muted mt-3 font-serif">{example}.tempo</p>
-    </div>
-  );
-}
-
-function Step({
-  num,
-  title,
-  desc,
-}: {
-  num: string;
-  title: string;
-  desc: string;
-}) {
-  return (
-    <div className="bg-white p-6 flex items-start gap-6">
-      <span className="text-xs text-muted font-sans">{num}</span>
-      <div>
-        <p className="text-sm font-medium text-primary">{title}</p>
-        <p className="text-sm text-tertiary mt-1">{desc}</p>
+      {/* Social */}
+      <div className="max-w-[640px] mx-auto w-full mt-12 md:mt-16 text-center">
+        <p className="text-xs text-tertiary mb-4">Follow us for updates</p>
+        <a
+          href="https://x.com/tempoidapp"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-2 px-6 py-3 border border-border bg-white
+                     text-sm text-secondary hover:text-primary hover:border-primary transition-all"
+        >
+          𝕏 @tempoidapp →
+        </a>
       </div>
     </div>
   );
