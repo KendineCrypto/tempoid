@@ -8,7 +8,7 @@ import { shortenAddress } from "@/lib/utils";
 const FEATURES = [
   {
     title: "Human-Readable Names",
-    desc: "Replace 0x742d... with fatih.tempo",
+    desc: "Replace 0x742d... with tempoid.tempo",
   },
   {
     title: "Send via Name",
