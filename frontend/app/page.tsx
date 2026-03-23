@@ -20,6 +20,30 @@ const FEATURES = [
   },
 ];
 
+const LAUNCH_TIME = new Date("2026-03-24T20:00:00Z").getTime();
+
+function useCountdown() {
+  const [timeLeft, setTimeLeft] = useState({ h: 0, m: 0, s: 0, ended: false });
+
+  useEffect(() => {
+    function calc() {
+      const diff = LAUNCH_TIME - Date.now();
+      if (diff <= 0) return { h: 0, m: 0, s: 0, ended: true };
+      return {
+        h: Math.floor(diff / 3600000),
+        m: Math.floor((diff % 3600000) / 60000),
+        s: Math.floor((diff % 60000) / 1000),
+        ended: false,
+      };
+    }
+    setTimeLeft(calc());
+    const interval = setInterval(() => setTimeLeft(calc()), 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  return timeLeft;
+}
+
 export default function WaitlistPage() {
   const { address, isConnected } = useAccount();
   const { connect } = useConnect();
@@ -27,6 +51,7 @@ export default function WaitlistPage() {
   const [joined, setJoined] = useState(false);
   const [waitlistCount, setWaitlistCount] = useState(0);
   const [showConfetti, setShowConfetti] = useState(false);
+  const countdown = useCountdown();
 
   useEffect(() => {
     setMounted(true);
@@ -112,11 +137,52 @@ export default function WaitlistPage() {
           on Tempo
         </h1>
 
-        <p className="text-secondary text-sm md:text-lg leading-relaxed mb-10 md:mb-14 max-w-[460px] mx-auto">
+        <p className="text-secondary text-sm md:text-lg leading-relaxed mb-8 md:mb-10 max-w-[460px] mx-auto">
           Register human-readable{" "}
           <span className="text-primary font-medium">.tempo</span> names on the
           Tempo blockchain. Join the waitlist for early access.
         </p>
+
+        {/* Countdown */}
+        {mounted && !countdown.ended && (
+          <div className="mb-10 md:mb-14">
+            <p className="text-xs text-tertiary uppercase tracking-wider mb-4">
+              Launching in
+            </p>
+            <div className="inline-flex items-center gap-1 md:gap-2">
+              {[
+                { val: countdown.h, label: "HRS" },
+                { val: countdown.m, label: "MIN" },
+                { val: countdown.s, label: "SEC" },
+              ].map((item, i) => (
+                <div key={item.label} className="flex items-center gap-1 md:gap-2">
+                  {i > 0 && (
+                    <span className="text-xl md:text-3xl text-tertiary font-light">:</span>
+                  )}
+                  <div className="flex flex-col items-center">
+                    <div className="w-16 md:w-20 h-16 md:h-20 bg-white border border-border flex items-center justify-center">
+                      <span className="text-2xl md:text-4xl font-serif text-primary tabular-nums">
+                        {String(item.val).padStart(2, "0")}
+                      </span>
+                    </div>
+                    <span className="text-[9px] md:text-[10px] text-tertiary mt-1.5 tracking-widest">
+                      {item.label}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {mounted && countdown.ended && (
+          <div className="mb-10 md:mb-14">
+            <div className="inline-flex items-center gap-2 px-6 py-3 border-2 border-primary bg-white">
+              <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+              <span className="text-sm text-primary font-medium">We are live!</span>
+            </div>
+          </div>
+        )}
 
         {/* CTA */}
         <div className="flex flex-col items-center gap-4">
