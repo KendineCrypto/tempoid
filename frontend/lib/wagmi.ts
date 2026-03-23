@@ -1,17 +1,11 @@
 import { createConfig, http } from "wagmi";
 import { tempo, tempoTestnet } from "wagmi/chains";
-import { KeyManager, webAuthn } from "wagmi/tempo";
 import { injected } from "wagmi/connectors";
 
 export { tempo, tempoTestnet };
 
 export const config = createConfig({
-  connectors: [
-    webAuthn({
-      keyManager: KeyManager.localStorage(),
-    }),
-    injected(),
-  ],
+  connectors: [injected()],
   chains: [tempo, tempoTestnet],
   multiInjectedProviderDiscovery: true,
   transports: {
