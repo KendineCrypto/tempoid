@@ -331,23 +331,35 @@ export default function WaitlistPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-[1px] bg-border">
           <button
             onClick={async () => {
-              if (!window.ethereum) {
-                alert("MetaMask is not installed. Please install MetaMask first.");
+              const ethereum = (window as any).ethereum;
+              if (!ethereum) {
+                window.open("https://metamask.io/download/", "_blank");
                 return;
               }
               try {
-                await window.ethereum.request({
-                  method: "wallet_addEthereumChain",
-                  params: [{
-                    chainId: "0x1079",
-                    chainName: "Tempo Mainnet",
-                    nativeCurrency: { name: "USD", symbol: "USD", decimals: 6 },
-                    rpcUrls: ["https://rpc.presto.tempo.xyz"],
-                    blockExplorerUrls: ["https://explore.tempo.xyz"],
-                  }],
+                await ethereum.request({
+                  method: "wallet_switchEthereumChain",
+                  params: [{ chainId: "0x1079" }],
                 });
-              } catch (e) {
-                console.error(e);
+              } catch (switchError: any) {
+                if (switchError.code === 4902) {
+                  try {
+                    await ethereum.request({
+                      method: "wallet_addEthereumChain",
+                      params: [{
+                        chainId: "0x1079",
+                        chainName: "Tempo Mainnet",
+                        nativeCurrency: { name: "USD", symbol: "USD", decimals: 18 },
+                        rpcUrls: ["https://rpc.presto.tempo.xyz"],
+                        blockExplorerUrls: ["https://explore.tempo.xyz"],
+                      }],
+                    });
+                  } catch (addError) {
+                    console.error("Failed to add Tempo:", addError);
+                  }
+                } else {
+                  console.error("Failed to switch:", switchError);
+                }
               }
             }}
             className="bg-white p-6 text-left hover:bg-bg transition-colors group"
