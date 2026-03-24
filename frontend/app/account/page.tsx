@@ -1,16 +1,53 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useAccount } from "wagmi";
+import { useAccount, useReadContracts } from "wagmi";
 import { WalletButton } from "@/components/WalletButton";
-import { useReverseLookup, usePathUSDBalance } from "@/hooks/useNameService";
+import { useReverseLookup, usePathUSDBalance, useNamesOfOwner } from "@/hooks/useNameService";
 import { shortenAddress, formatPathUSD } from "@/lib/utils";
+import { TNS_ABI, TEMPO_NAME_SERVICE_ADDRESS } from "@/lib/contract";
+import { tempo } from "@/lib/wagmi";
 import Link from "next/link";
+
+function useUserNames(address: string | undefined) {
+  const { names: ownedNames, isLoading: namesLoading } = useNamesOfOwner(address);
+
+  // Fetch expiry info for each owned name
+  const contracts = ownedNames.map((name) => ({
+    address: TEMPO_NAME_SERVICE_ADDRESS,
+    abi: TNS_ABI,
+    functionName: "getNameInfo" as const,
+    args: [name] as const,
+    chainId: tempo.id,
+  }));
+
+  const { data, isLoading: infoLoading } = useReadContracts({
+    contracts,
+    query: { enabled: ownedNames.length > 0 },
+  });
+
+  const verifiedNames: { name: string; expiry: number; isExpired: boolean }[] = [];
+  if (data) {
+    ownedNames.forEach((name, i) => {
+      const result = data[i]?.result as [string, bigint, boolean, boolean] | undefined;
+      if (result) {
+        verifiedNames.push({
+          name,
+          expiry: Number(result[1]),
+          isExpired: result[2],
+        });
+      }
+    });
+  }
+
+  return { names: verifiedNames, isLoading: namesLoading || infoLoading };
+}
 
 export default function AccountPage() {
   const { address, isConnected } = useAccount();
   const { name: primaryName } = useReverseLookup(address);
   const { balance, isLoading: balanceLoading } = usePathUSDBalance(address);
+  const { names, isLoading: namesLoading } = useUserNames(address);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -99,27 +136,46 @@ export default function AccountPage() {
           My Names
         </p>
 
-        {primaryName ? (
+        {namesLoading ? (
+          <div className="p-8 bg-white border border-border text-center">
+            <p className="text-sm text-tertiary">Loading names...</p>
+          </div>
+        ) : names.length > 0 ? (
           <div className="space-y-[1px] bg-border">
-            <Link
-              href={`/name/${primaryName}`}
-              className="block p-5 md:p-6 bg-white hover:border-primary
-                         transition-colors group"
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3 flex-wrap">
-                  <span className="font-serif text-lg text-primary group-hover:opacity-70 transition-opacity">
-                    {primaryName}.tempo
-                  </span>
-                  <span className="text-xs text-tertiary border border-border px-2 py-0.5">
-                    Primary
-                  </span>
+            {names.map((n) => (
+              <Link
+                key={n.name}
+                href={`/name/${n.name}`}
+                className="block p-5 md:p-6 bg-white hover:border-primary
+                           transition-colors group"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <span className="font-serif text-lg text-primary group-hover:opacity-70 transition-opacity">
+                      {n.name}.tempo
+                    </span>
+                    {primaryName === n.name && (
+                      <span className="text-xs text-tertiary border border-border px-2 py-0.5">
+                        Primary
+                      </span>
+                    )}
+                    {n.isExpired && (
+                      <span className="text-xs text-red-500 border border-red-200 px-2 py-0.5">
+                        Expired
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <span className="text-[11px] text-tertiary">
+                      expires {new Date(n.expiry * 1000).toLocaleDateString()}
+                    </span>
+                    <span className="text-xs text-tertiary">
+                      Manage →
+                    </span>
+                  </div>
                 </div>
-                <span className="text-xs text-tertiary">
-                  Manage →
-                </span>
-              </div>
-            </Link>
+              </Link>
+            ))}
           </div>
         ) : (
           <div className="p-8 md:p-12 bg-white border border-border text-center">

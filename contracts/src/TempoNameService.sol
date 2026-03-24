@@ -11,6 +11,7 @@ contract TempoNameService is Ownable, ReentrancyGuard {
         address owner;
         uint256 expiry;
         mapping(string => string) metadata;
+        string[] metadataKeys; // track keys for cleanup
     }
 
     struct Listing {
@@ -31,11 +32,15 @@ contract TempoNameService is Ownable, ReentrancyGuard {
     mapping(address => string) private _primaryNames;
     mapping(uint8 => uint256) public yearlyFees; // charLength => fee
 
+    // Owner name enumeration
+    mapping(address => string[]) private _ownedNames;
+    mapping(string => uint256) private _ownedIndex; // name => index in owner's array
+
     // Marketplace
     mapping(string => Listing) private _listings;
-    string[] private _listedNames; // track listed names for enumeration
-    mapping(string => uint256) private _listedIndex; // name => index in _listedNames
-    uint256 public marketplaceFee = 250; // 2.5% (basis points, 10000 = 100%)
+    string[] private _listedNames;
+    mapping(string => uint256) private _listedIndex;
+    uint256 public marketplaceFee = 250; // 2.5% (basis points)
     uint256 public constant FEE_DENOMINATOR = 10000;
 
     // --- Events ---
@@ -43,7 +48,9 @@ contract TempoNameService is Ownable, ReentrancyGuard {
     event NameRenewed(string indexed name, uint256 newExpiry);
     event NameTransferred(string indexed name, address indexed from, address indexed to);
     event PrimaryNameSet(address indexed owner, string name);
+    event PrimaryNameCleared(address indexed owner);
     event MetadataSet(string indexed name, string key, string value);
+    event MetadataCleared(string indexed name);
     event YearlyFeeUpdated(uint8 charLength, uint256 fee);
     event NameListed(string indexed name, address indexed seller, uint256 price);
     event ListingCancelled(string indexed name, address indexed seller);
@@ -60,42 +67,67 @@ contract TempoNameService is Ownable, ReentrancyGuard {
     error NotListed();
     error InvalidPrice();
     error CannotBuyOwnName();
+    error InvalidAddress();
+    error NoPrimaryName();
+    error FeeAboveMaximum();
 
     constructor(address _paymentToken) Ownable(msg.sender) {
         paymentToken = IERC20(_paymentToken);
 
-        // Default fees (in pathUSD with 6 decimals)
+        // Default fees (pathUSD 6 decimals)
         yearlyFees[3] = 20 * 1e6;  // 3 char: $20/year
         yearlyFees[4] = 5 * 1e6;   // 4 char: $5/year
         yearlyFees[5] = 1 * 1e6;   // 5+ char: $1/year
     }
 
-    // --- Registration ---
+    // ==================== Registration ====================
 
-    function register(string calldata name, address owner, uint256 years_) external nonReentrant {
+    function register(string calldata name, uint256 years_) external nonReentrant {
         _validateName(name);
         if (years_ == 0) revert InvalidDuration();
 
         NameRecord storage record = _records[name];
-        if (record.owner != address(0) && block.timestamp < record.expiry + GRACE_PERIOD) {
+
+        // Check availability: new name or expired past grace period
+        bool isNewRegistration = record.owner == address(0);
+        bool isExpiredPastGrace = !isNewRegistration && block.timestamp > record.expiry + GRACE_PERIOD;
+
+        if (!isNewRegistration && !isExpiredPastGrace) {
             revert NameNotAvailable();
         }
 
+        // If re-registering expired name, clean up old owner data
+        if (isExpiredPastGrace) {
+            _removeFromOwner(record.owner, name);
+            _clearMetadata(name);
+            // Cancel listing if exists
+            if (_listings[name].active) {
+                emit ListingCancelled(name, _listings[name].seller);
+                _removeListing(name);
+            }
+        }
+
+        // Collect payment
         uint256 fee = getRegistrationFee(name, years_);
         paymentToken.transferFrom(msg.sender, address(this), fee);
 
-        record.owner = owner;
+        // Set record
+        record.owner = msg.sender;
         record.expiry = block.timestamp + (REGISTRATION_PERIOD * years_);
 
-        if (bytes(_primaryNames[owner]).length == 0) {
-            _primaryNames[owner] = name;
-            emit PrimaryNameSet(owner, name);
+        // Add to owner's name list
+        _addToOwner(msg.sender, name);
+
+        // Auto-set primary name if owner has none
+        if (bytes(_primaryNames[msg.sender]).length == 0) {
+            _primaryNames[msg.sender] = name;
+            emit PrimaryNameSet(msg.sender, name);
         }
 
-        emit NameRegistered(name, owner, record.expiry);
+        emit NameRegistered(name, msg.sender, record.expiry);
     }
 
-    // --- Resolution ---
+    // ==================== Resolution ====================
 
     function resolve(string calldata name) external view returns (address) {
         NameRecord storage record = _records[name];
@@ -105,9 +137,9 @@ contract TempoNameService is Ownable, ReentrancyGuard {
         return record.owner;
     }
 
-    function reverseLookup(address owner) external view returns (string memory) {
-        string memory name = _primaryNames[owner];
-        if (bytes(name).length == 0) revert NameExpired();
+    function reverseLookup(address addr) external view returns (string memory) {
+        string memory name = _primaryNames[addr];
+        if (bytes(name).length == 0) revert NoPrimaryName();
 
         NameRecord storage record = _records[name];
         if (block.timestamp > record.expiry) revert NameExpired();
@@ -115,7 +147,7 @@ contract TempoNameService is Ownable, ReentrancyGuard {
         return name;
     }
 
-    // --- Management ---
+    // ==================== Management ====================
 
     function renew(string calldata name, uint256 years_) external nonReentrant {
         if (years_ == 0) revert InvalidDuration();
@@ -132,7 +164,9 @@ contract TempoNameService is Ownable, ReentrancyGuard {
         emit NameRenewed(name, record.expiry);
     }
 
-    function transfer(string calldata name, address newOwner) external {
+    function transfer(string calldata name, address newOwner) external nonReentrant {
+        if (newOwner == address(0)) revert InvalidAddress();
+
         NameRecord storage record = _records[name];
         if (record.owner != msg.sender) revert NotNameOwner();
         if (block.timestamp > record.expiry) revert NameExpired();
@@ -146,8 +180,20 @@ contract TempoNameService is Ownable, ReentrancyGuard {
         address oldOwner = record.owner;
         record.owner = newOwner;
 
+        // Update owner enumeration
+        _removeFromOwner(oldOwner, name);
+        _addToOwner(newOwner, name);
+
+        // Clear sender's primary name if it was this name
         if (keccak256(bytes(_primaryNames[oldOwner])) == keccak256(bytes(name))) {
             delete _primaryNames[oldOwner];
+            emit PrimaryNameCleared(oldOwner);
+        }
+
+        // Auto-set primary for receiver if none
+        if (bytes(_primaryNames[newOwner]).length == 0) {
+            _primaryNames[newOwner] = name;
+            emit PrimaryNameSet(newOwner, name);
         }
 
         emit NameTransferred(name, oldOwner, newOwner);
@@ -162,16 +208,27 @@ contract TempoNameService is Ownable, ReentrancyGuard {
         emit PrimaryNameSet(msg.sender, name);
     }
 
+    function clearPrimaryName() external {
+        if (bytes(_primaryNames[msg.sender]).length == 0) revert NoPrimaryName();
+        delete _primaryNames[msg.sender];
+        emit PrimaryNameCleared(msg.sender);
+    }
+
     function setMetadata(string calldata name, string calldata key, string calldata value) external {
         NameRecord storage record = _records[name];
         if (record.owner != msg.sender) revert NotNameOwner();
         if (block.timestamp > record.expiry) revert NameExpired();
 
+        // Track new metadata keys
+        if (bytes(record.metadata[key]).length == 0 && bytes(value).length > 0) {
+            record.metadataKeys.push(key);
+        }
+
         record.metadata[key] = value;
         emit MetadataSet(name, key, value);
     }
 
-    // --- Marketplace ---
+    // ==================== Marketplace ====================
 
     function listForSale(string calldata name, uint256 price) external {
         NameRecord storage record = _records[name];
@@ -200,7 +257,6 @@ contract TempoNameService is Ownable, ReentrancyGuard {
         if (listing.seller != msg.sender) revert NotNameOwner();
 
         _removeListing(name);
-
         emit ListingCancelled(name, msg.sender);
     }
 
@@ -219,18 +275,22 @@ contract TempoNameService is Ownable, ReentrancyGuard {
         uint256 commission = (price * marketplaceFee) / FEE_DENOMINATOR;
         uint256 sellerAmount = price - commission;
 
-        // Transfer payment: buyer pays full price
-        paymentToken.transferFrom(msg.sender, seller, sellerAmount);
-        if (commission > 0) {
-            paymentToken.transferFrom(msg.sender, address(this), commission);
-        }
+        // Atomic payment: buyer sends full amount to contract first
+        paymentToken.transferFrom(msg.sender, address(this), price);
+        // Then contract pays seller
+        paymentToken.transfer(seller, sellerAmount);
 
         // Transfer name ownership
         record.owner = msg.sender;
 
+        // Update owner enumeration
+        _removeFromOwner(seller, name);
+        _addToOwner(msg.sender, name);
+
         // Clear seller's primary name if it was this name
         if (keccak256(bytes(_primaryNames[seller])) == keccak256(bytes(name))) {
             delete _primaryNames[seller];
+            emit PrimaryNameCleared(seller);
         }
 
         // Auto-set primary for buyer if none
@@ -246,7 +306,25 @@ contract TempoNameService is Ownable, ReentrancyGuard {
         emit NameTransferred(name, seller, msg.sender);
     }
 
-    // --- Marketplace Views ---
+    /// @notice Clean up expired listings from marketplace
+    function cleanExpiredListings(uint256 maxClean) external {
+        uint256 cleaned = 0;
+        uint256 i = 0;
+        while (i < _listedNames.length && cleaned < maxClean) {
+            string memory name = _listedNames[i];
+            NameRecord storage record = _records[name];
+            if (block.timestamp > record.expiry) {
+                emit ListingCancelled(name, _listings[name].seller);
+                _removeListing(name);
+                cleaned++;
+                // Don't increment i — swap-and-pop moved a new name to index i
+            } else {
+                i++;
+            }
+        }
+    }
+
+    // ==================== View Functions ====================
 
     function getListing(string calldata name) external view returns (
         address seller,
@@ -262,10 +340,23 @@ contract TempoNameService is Ownable, ReentrancyGuard {
     }
 
     function getListedNameByIndex(uint256 index) external view returns (string memory) {
+        if (index >= _listedNames.length) revert InvalidName();
         return _listedNames[index];
     }
 
-    // --- View helpers ---
+    /// @notice Get paginated listings
+    function getListings(uint256 offset, uint256 limit) external view returns (string[] memory names) {
+        uint256 total = _listedNames.length;
+        if (offset >= total) return new string[](0);
+
+        uint256 count = limit;
+        if (offset + count > total) count = total - offset;
+
+        names = new string[](count);
+        for (uint256 i = 0; i < count; i++) {
+            names[i] = _listedNames[offset + i];
+        }
+    }
 
     function getNameInfo(string calldata name) external view returns (
         address owner,
@@ -276,7 +367,7 @@ contract TempoNameService is Ownable, ReentrancyGuard {
         NameRecord storage record = _records[name];
         owner = record.owner;
         expiry = record.expiry;
-        isExpired = block.timestamp > record.expiry;
+        isExpired = record.owner != address(0) && block.timestamp > record.expiry;
         isAvailable = record.owner == address(0) || block.timestamp > record.expiry + GRACE_PERIOD;
     }
 
@@ -304,7 +395,27 @@ contract TempoNameService is Ownable, ReentrancyGuard {
         return record.owner == address(0) || block.timestamp > record.expiry + GRACE_PERIOD;
     }
 
-    // --- Admin ---
+    /// @notice Get all names owned by an address
+    function getNamesOfOwner(address addr) external view returns (string[] memory) {
+        return _ownedNames[addr];
+    }
+
+    /// @notice Get count of names owned by an address
+    function getNameCount(address addr) external view returns (uint256) {
+        return _ownedNames[addr].length;
+    }
+
+    /// @notice Get grace period remaining for an expired name (0 if not expired or past grace)
+    function getGracePeriodRemaining(string calldata name) external view returns (uint256) {
+        NameRecord storage record = _records[name];
+        if (record.owner == address(0)) return 0;
+        if (block.timestamp <= record.expiry) return GRACE_PERIOD;
+        uint256 graceEnd = record.expiry + GRACE_PERIOD;
+        if (block.timestamp > graceEnd) return 0;
+        return graceEnd - block.timestamp;
+    }
+
+    // ==================== Admin ====================
 
     function setYearlyFee(uint8 charLen, uint256 fee) external onlyOwner {
         yearlyFees[charLen] = fee;
@@ -312,7 +423,7 @@ contract TempoNameService is Ownable, ReentrancyGuard {
     }
 
     function setMarketplaceFee(uint256 newFee) external onlyOwner {
-        require(newFee <= 1000, "Fee too high"); // max 10%
+        if (newFee > 1000) revert FeeAboveMaximum(); // max 10%
         marketplaceFee = newFee;
         emit MarketplaceFeeUpdated(newFee);
     }
@@ -322,7 +433,26 @@ contract TempoNameService is Ownable, ReentrancyGuard {
         paymentToken.transfer(owner(), balance);
     }
 
-    // --- Internal ---
+    // ==================== Internal ====================
+
+    function _addToOwner(address addr, string memory name) internal {
+        _ownedIndex[name] = _ownedNames[addr].length;
+        _ownedNames[addr].push(name);
+    }
+
+    function _removeFromOwner(address addr, string memory name) internal {
+        uint256 index = _ownedIndex[name];
+        uint256 lastIndex = _ownedNames[addr].length - 1;
+
+        if (index != lastIndex) {
+            string memory lastName = _ownedNames[addr][lastIndex];
+            _ownedNames[addr][index] = lastName;
+            _ownedIndex[lastName] = index;
+        }
+
+        _ownedNames[addr].pop();
+        delete _ownedIndex[name];
+    }
 
     function _removeListing(string memory name) internal {
         uint256 index = _listedIndex[name];
@@ -339,12 +469,20 @@ contract TempoNameService is Ownable, ReentrancyGuard {
         delete _listings[name];
     }
 
+    function _clearMetadata(string memory name) internal {
+        NameRecord storage record = _records[name];
+        for (uint256 i = 0; i < record.metadataKeys.length; i++) {
+            delete record.metadata[record.metadataKeys[i]];
+        }
+        delete record.metadataKeys;
+        emit MetadataCleared(name);
+    }
+
     function _validateName(string calldata name) internal pure {
         bytes memory nameBytes = bytes(name);
         uint256 len = nameBytes.length;
 
         if (len < MIN_NAME_LENGTH || len > MAX_NAME_LENGTH) revert InvalidName();
-
         if (nameBytes[0] == 0x2D || nameBytes[len - 1] == 0x2D) revert InvalidName();
 
         for (uint256 i = 0; i < len; i++) {

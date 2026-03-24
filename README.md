@@ -1,4 +1,4 @@
-# TempID — Tempo Name Service
+# TempoID — Tempo Name Service
 
 Register `.tempo` names on the Tempo blockchain. Use human-readable names like `fatih.tempo` instead of long wallet addresses.
 

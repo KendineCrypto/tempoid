@@ -69,11 +69,13 @@ export function useRegister(name: string, years: number) {
         address: TEMPO_NAME_SERVICE_ADDRESS,
         abi: TNS_ABI,
         functionName: "register",
-        args: [name, address, BigInt(years)],
+        args: [name, BigInt(years)],
         chainId: tempo.id,
       },
       {
-        onSuccess: () => setStep("done"),
+        onSuccess: () => {
+          setStep("done");
+        },
         onError: (err) => {
           setError(err.message);
           setStep("approve");

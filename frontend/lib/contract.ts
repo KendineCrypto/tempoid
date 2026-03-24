@@ -1,5 +1,5 @@
 export const TEMPO_NAME_SERVICE_ADDRESS =
-  "0x199002DBDe63764596101EcEcae9Dc6dc29cE168" as const; // UPDATE after deploy
+  "0x9A56AE2275C85aaB13533c00d2cfa42C619Bc3A9" as const;
 
 export const PATHUSD_ADDRESS =
   "0x20c0000000000000000000000000000000000000" as const;
@@ -35,14 +35,13 @@ export const PATHUSD_ABI = [
 ] as const;
 
 export const TNS_ABI = [
-  // Registration
+  // Registration (v2: no owner param, msg.sender is owner)
   {
     name: "register",
     type: "function",
     stateMutability: "nonpayable",
     inputs: [
       { name: "name", type: "string" },
-      { name: "owner", type: "address" },
       { name: "years_", type: "uint256" },
     ],
     outputs: [],
@@ -88,6 +87,13 @@ export const TNS_ABI = [
     type: "function",
     stateMutability: "nonpayable",
     inputs: [{ name: "name", type: "string" }],
+    outputs: [],
+  },
+  {
+    name: "clearPrimaryName",
+    type: "function",
+    stateMutability: "nonpayable",
+    inputs: [],
     outputs: [],
   },
   {
@@ -141,32 +147,43 @@ export const TNS_ABI = [
     inputs: [{ name: "name", type: "string" }],
     outputs: [{ type: "bool" }],
   },
-  // Events
   {
-    name: "NameRegistered",
-    type: "event",
-    inputs: [
-      { name: "name", type: "string", indexed: true },
-      { name: "owner", type: "address", indexed: true },
-      { name: "expiry", type: "uint256", indexed: false },
-    ],
+    name: "getNamesOfOwner",
+    type: "function",
+    stateMutability: "view",
+    inputs: [{ name: "addr", type: "address" }],
+    outputs: [{ type: "string[]" }],
   },
   {
-    name: "NameRenewed",
-    type: "event",
-    inputs: [
-      { name: "name", type: "string", indexed: true },
-      { name: "newExpiry", type: "uint256", indexed: false },
-    ],
+    name: "getNameCount",
+    type: "function",
+    stateMutability: "view",
+    inputs: [{ name: "addr", type: "address" }],
+    outputs: [{ type: "uint256" }],
   },
   {
-    name: "NameTransferred",
-    type: "event",
+    name: "getGracePeriodRemaining",
+    type: "function",
+    stateMutability: "view",
+    inputs: [{ name: "name", type: "string" }],
+    outputs: [{ type: "uint256" }],
+  },
+  {
+    name: "getListings",
+    type: "function",
+    stateMutability: "view",
     inputs: [
-      { name: "name", type: "string", indexed: true },
-      { name: "from", type: "address", indexed: true },
-      { name: "to", type: "address", indexed: true },
+      { name: "offset", type: "uint256" },
+      { name: "limit", type: "uint256" },
     ],
+    outputs: [{ name: "names", type: "string[]" }],
+  },
+  {
+    name: "cleanExpiredListings",
+    type: "function",
+    stateMutability: "nonpayable",
+    inputs: [{ name: "maxClean", type: "uint256" }],
+    outputs: [],
   },
   // Marketplace
   {
@@ -217,6 +234,33 @@ export const TNS_ABI = [
     stateMutability: "view",
     inputs: [{ name: "index", type: "uint256" }],
     outputs: [{ type: "string" }],
+  },
+  // Events
+  {
+    name: "NameRegistered",
+    type: "event",
+    inputs: [
+      { name: "name", type: "string", indexed: true },
+      { name: "owner", type: "address", indexed: true },
+      { name: "expiry", type: "uint256", indexed: false },
+    ],
+  },
+  {
+    name: "NameRenewed",
+    type: "event",
+    inputs: [
+      { name: "name", type: "string", indexed: true },
+      { name: "newExpiry", type: "uint256", indexed: false },
+    ],
+  },
+  {
+    name: "NameTransferred",
+    type: "event",
+    inputs: [
+      { name: "name", type: "string", indexed: true },
+      { name: "from", type: "address", indexed: true },
+      { name: "to", type: "address", indexed: true },
+    ],
   },
   {
     name: "NameListed",

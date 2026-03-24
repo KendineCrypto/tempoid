@@ -124,6 +124,23 @@ export function usePathUSDBalance(address: string | undefined) {
   };
 }
 
+export function useNamesOfOwner(address: string | undefined) {
+  const { data, isLoading, refetch } = useReadContract({
+    address: TEMPO_NAME_SERVICE_ADDRESS,
+    abi: TNS_ABI,
+    functionName: "getNamesOfOwner",
+    args: [address as `0x${string}`],
+    chainId: tempo.id,
+    query: { enabled: !!address },
+  });
+
+  return {
+    names: (data as string[] | undefined) ?? [],
+    isLoading,
+    refetch,
+  };
+}
+
 export function useRegistrationFee(name: string, years: number) {
   const { data, isLoading } = useReadContract({
     address: TEMPO_NAME_SERVICE_ADDRESS,
