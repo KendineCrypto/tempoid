@@ -340,9 +340,9 @@ export default function WaitlistPage() {
                   method: "wallet_addEthereumChain",
                   params: [{
                     chainId: "0x1079",
-                    chainName: "Tempo",
-                    nativeCurrency: { name: "pathUSD", symbol: "pathUSD", decimals: 18 },
-                    rpcUrls: ["https://rpc.tempo.xyz"],
+                    chainName: "Tempo Mainnet",
+                    nativeCurrency: { name: "USD", symbol: "USD", decimals: 6 },
+                    rpcUrls: ["https://rpc.presto.tempo.xyz"],
                     blockExplorerUrls: ["https://explore.tempo.xyz"],
                   }],
                 });
@@ -361,7 +361,7 @@ export default function WaitlistPage() {
             </div>
           </button>
           <a
-            href="https://relay.link/bridge/tempo?currency=pathusd"
+            href="https://relay.link/bridge/tempo?toCurrency=0x20c0000000000000000000000000000000000000&fromCurrency=0x0000000000000000000000000000000000000000"
             target="_blank"
             rel="noopener noreferrer"
             className="bg-white p-6 text-left hover:bg-bg transition-colors group"

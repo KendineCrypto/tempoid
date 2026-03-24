@@ -9,7 +9,7 @@ export const config = createConfig({
   chains: [tempo, tempoTestnet],
   multiInjectedProviderDiscovery: true,
   transports: {
-    [tempo.id]: http("https://rpc.tempo.xyz"),
+    [tempo.id]: http("https://rpc.presto.tempo.xyz"),
     [tempoTestnet.id]: http("https://rpc.moderato.tempo.xyz"),
   },
 });
