@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useAccount, useSwitchChain } from "wagmi";
-import { getYearlyFeeDisplay } from "@/lib/utils";
+import { getYearlyFeeDisplay, getOriginalFeeDisplay, LAUNCH_DAY_DISCOUNT } from "@/lib/utils";
 import { tempo } from "@/lib/wagmi";
 import { useRegister } from "@/hooks/useRegister";
 
@@ -62,9 +62,21 @@ export function RegisterFlow({ name }: RegisterFlowProps) {
 
       {/* Price */}
       <div className="border-t border-border pt-6">
+        {LAUNCH_DAY_DISCOUNT && (
+          <div className="mb-4 py-2 px-3 bg-primary/5 border border-primary/10 text-center">
+            <span className="text-xs font-medium text-primary uppercase tracking-wider">
+              Launch Day — 25% Off
+            </span>
+          </div>
+        )}
         <div className="flex justify-between text-sm text-tertiary">
           <span>Annual fee</span>
-          <span>${yearlyFee} pathUSD</span>
+          <span className="flex items-center gap-2">
+            {LAUNCH_DAY_DISCOUNT && (
+              <span className="line-through text-muted">${getOriginalFeeDisplay(name)}</span>
+            )}
+            <span>${yearlyFee} pathUSD</span>
+          </span>
         </div>
         <div className="flex justify-between text-sm text-tertiary mt-2">
           <span>Duration</span>
@@ -72,8 +84,13 @@ export function RegisterFlow({ name }: RegisterFlowProps) {
         </div>
         <div className="flex justify-between mt-4 pt-4 border-t border-border">
           <span className="text-sm font-medium text-primary">Total</span>
-          <span className="text-lg font-serif text-primary">
-            ${totalFee} pathUSD
+          <span className="flex items-center gap-2">
+            {LAUNCH_DAY_DISCOUNT && (
+              <span className="text-sm line-through text-muted">${getOriginalFeeDisplay(name) * years}</span>
+            )}
+            <span className="text-lg font-serif text-primary">
+              ${totalFee} pathUSD
+            </span>
           </span>
         </div>
       </div>

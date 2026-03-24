@@ -46,9 +46,20 @@ export default function RootLayout({
                 </span>
               </Link>
 
-              <div className="flex items-center gap-4">
+              <div className="hidden md:flex items-center gap-8">
+                <Link href="/" className="text-sm text-secondary hover:text-primary transition-colors">Search</Link>
+                <Link href="/send" className="text-sm text-secondary hover:text-primary transition-colors">Send</Link>
+                <Link href="/marketplace" className="text-sm text-secondary hover:text-primary transition-colors">Marketplace</Link>
+                <Link href="/account" className="text-sm text-secondary hover:text-primary transition-colors">Account</Link>
                 <WalletButton />
               </div>
+              <div className="flex md:hidden items-center gap-4">
+                <Link href="/send" className="text-xs text-secondary">Send</Link>
+                <Link href="/marketplace" className="text-xs text-secondary">Market</Link>
+                <Link href="/account" className="text-xs text-secondary">Account</Link>
+                <WalletButton />
+              </div>
+
             </div>
             <div className="border-b border-border" />
           </nav>

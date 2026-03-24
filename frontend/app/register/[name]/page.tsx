@@ -2,7 +2,7 @@
 
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { validateName, getYearlyFeeDisplay } from "@/lib/utils";
+import { validateName, getYearlyFeeDisplay, getOriginalFeeDisplay, LAUNCH_DAY_DISCOUNT } from "@/lib/utils";
 import { useNameAvailability } from "@/hooks/useNameService";
 import { RegisterFlow } from "@/components/RegisterFlow";
 
@@ -33,7 +33,14 @@ export default function RegisterPage() {
           <p className="text-sm text-tertiary mt-4">Checking...</p>
         ) : isAvailable ? (
           <p className="text-sm text-primary mt-4">
-            Available · ${getYearlyFeeDisplay(name)}/year
+            Available · {LAUNCH_DAY_DISCOUNT && (
+              <span className="line-through text-muted mr-1">${getOriginalFeeDisplay(name)}</span>
+            )}${getYearlyFeeDisplay(name)}/year
+            {LAUNCH_DAY_DISCOUNT && (
+              <span className="ml-2 text-[10px] font-medium bg-primary text-white px-1.5 py-0.5 uppercase">
+                25% off
+              </span>
+            )}
           </p>
         ) : (
           <p className="text-sm text-tertiary mt-4">Already registered</p>

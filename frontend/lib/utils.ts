@@ -27,9 +27,30 @@ export function validateName(name: string): {
 }
 
 /**
+ * Launch day discount flag — set to false after launch day.
+ */
+export const LAUNCH_DAY_DISCOUNT = true;
+
+/**
  * Calculate yearly fee based on name length (display value, not wei).
+ * When LAUNCH_DAY_DISCOUNT is true, returns 25% off prices.
  */
 export function getYearlyFeeDisplay(name: string): number {
+  const len = name.length;
+  if (LAUNCH_DAY_DISCOUNT) {
+    if (len <= 3) return 15;
+    if (len === 4) return 3.75;
+    return 1;
+  }
+  if (len <= 3) return 20;
+  if (len === 4) return 5;
+  return 1;
+}
+
+/**
+ * Get original (non-discounted) yearly fee for strikethrough display.
+ */
+export function getOriginalFeeDisplay(name: string): number {
   const len = name.length;
   if (len <= 3) return 20;
   if (len === 4) return 5;

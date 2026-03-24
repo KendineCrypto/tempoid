@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { shortenAddress, formatExpiry, getYearlyFeeDisplay } from "@/lib/utils";
+import { shortenAddress, formatExpiry, getYearlyFeeDisplay, getOriginalFeeDisplay, LAUNCH_DAY_DISCOUNT } from "@/lib/utils";
 
 interface NameCardProps {
   name: string;
@@ -39,7 +39,12 @@ export function NameCard({ name, owner, expiry, isAvailable }: NameCardProps) {
           ) : (
             <span className="text-xs text-muted">Registered</span>
           )}
-          <p className="text-sm text-primary mt-1">
+          {LAUNCH_DAY_DISCOUNT && (
+            <p className="text-xs text-muted line-through mt-1">
+              ${getOriginalFeeDisplay(name)}/yr
+            </p>
+          )}
+          <p className="text-sm text-primary mt-0.5">
             ${getYearlyFeeDisplay(name)}/yr
           </p>
         </div>

@@ -3,9 +3,9 @@
 import { SearchBar } from "@/components/SearchBar";
 
 const PRICING = [
-  { chars: "3 chars", price: "$20", example: "abc.tempo" },
-  { chars: "4 chars", price: "$5", example: "name.tempo" },
-  { chars: "5+ chars", price: "$1", example: "tempoid.tempo" },
+  { chars: "3 chars", price: "$15", originalPrice: "$20", example: "abc.tempo" },
+  { chars: "4 chars", price: "$3.75", originalPrice: "$5", example: "name.tempo" },
+  { chars: "5+ chars", price: "$1", originalPrice: null, example: "tempoid.tempo" },
 ];
 
 const STEPS = [
@@ -35,9 +35,14 @@ export default function HomePage() {
 
       {/* Pricing */}
       <div className="max-w-[720px] mx-auto w-full px-4 mb-16 md:mb-24">
-        <p className="text-xs text-tertiary uppercase tracking-wider mb-6">
-          Pricing
-        </p>
+        <div className="flex items-center gap-3 mb-6">
+          <p className="text-xs text-tertiary uppercase tracking-wider">
+            Pricing
+          </p>
+          <span className="text-[10px] font-medium text-white bg-primary px-2 py-0.5 uppercase tracking-wider">
+            Launch Day — 25% Off
+          </span>
+        </div>
         <div className="grid grid-cols-3 gap-[1px] bg-border">
           {PRICING.map((p) => (
             <div key={p.chars} className="bg-white p-4 md:p-6 text-center">
@@ -46,6 +51,11 @@ export default function HomePage() {
                 {p.price}
                 <span className="text-xs text-tertiary font-sans">/yr</span>
               </p>
+              {p.originalPrice && (
+                <p className="text-xs text-muted mt-1 line-through">
+                  {p.originalPrice}/yr
+                </p>
+              )}
               <p className="text-[11px] text-muted mt-2 font-mono">{p.example}</p>
             </div>
           ))}

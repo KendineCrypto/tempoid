@@ -1,8 +1,8 @@
-import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { NextResponse } from "next/server";
 
 // Set to false when ready to launch
-const WAITLIST_MODE = true;
+const WAITLIST_MODE = false;
 
 const PROTECTED_ROUTES = [
   "/register",
