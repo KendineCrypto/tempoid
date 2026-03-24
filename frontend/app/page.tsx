@@ -323,6 +323,60 @@ export default function WaitlistPage() {
         </p>
       </div>
 
+      {/* Get Ready */}
+      <div className="max-w-[640px] mx-auto w-full mt-12 md:mt-16">
+        <p className="text-xs text-tertiary uppercase tracking-wider mb-6 text-center">
+          Get Ready
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-[1px] bg-border">
+          <button
+            onClick={async () => {
+              if (!window.ethereum) {
+                alert("MetaMask is not installed. Please install MetaMask first.");
+                return;
+              }
+              try {
+                await window.ethereum.request({
+                  method: "wallet_addEthereumChain",
+                  params: [{
+                    chainId: "0x1079",
+                    chainName: "Tempo",
+                    nativeCurrency: { name: "pathUSD", symbol: "pathUSD", decimals: 18 },
+                    rpcUrls: ["https://rpc.tempo.xyz"],
+                    blockExplorerUrls: ["https://explore.tempo.xyz"],
+                  }],
+                });
+              } catch (e) {
+                console.error(e);
+              }
+            }}
+            className="bg-white p-6 text-left hover:bg-bg transition-colors group"
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-primary">Add Tempo to MetaMask</p>
+                <p className="text-xs text-tertiary mt-1">Add Tempo mainnet to your wallet</p>
+              </div>
+              <span className="text-tertiary group-hover:text-primary group-hover:translate-x-1 transition-all">→</span>
+            </div>
+          </button>
+          <a
+            href="https://relay.link/bridge/tempo?currency=pathusd"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="bg-white p-6 text-left hover:bg-bg transition-colors group"
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-primary">Buy pathUSD</p>
+                <p className="text-xs text-tertiary mt-1">Bridge to Tempo via Relay</p>
+              </div>
+              <span className="text-tertiary group-hover:text-primary group-hover:translate-x-1 transition-all">→</span>
+            </div>
+          </a>
+        </div>
+      </div>
+
       {/* Social */}
       <div className="max-w-[640px] mx-auto w-full mt-12 md:mt-16 text-center">
         <p className="text-xs text-tertiary mb-4">Follow us for updates</p>
