@@ -1,0 +1,79 @@
+# TempOID — Tempo Name Service
+# https://tempoid.xyz
+
+TempOID is the identity and naming layer for the Tempo blockchain.
+Register .tempo names, send payments by name, trade names on the marketplace.
+
+## Network Info
+Chain: Tempo Mainnet (Chain ID 4217)
+RPC: https://rpc.presto.tempo.xyz
+Payment Token: pathUSD (0x20c0000000000000000000000000000000000000)
+Contract: 0x9A56AE2275C85aaB13533c00d2cfa42C619Bc3A9
+
+## Pricing
+- 3 characters: 15 pathUSD/year (launch discount)
+- 4 characters: 3.75 pathUSD/year (launch discount)
+- 5+ characters: 1 pathUSD/year
+
+## MPP-Enabled Endpoints
+
+### Check name availability (FREE)
+GET https://tempoid.xyz/api/mpp/check/{name}
+Returns: { name, available, category, price_per_year_usd, currency }
+
+### Resolve name to address (FREE)
+GET https://tempoid.xyz/api/mpp/resolve/{name}
+Returns: { name, address, resolver }
+
+### Reverse lookup address to name (FREE)
+GET https://tempoid.xyz/api/mpp/reverse/{address}
+Returns: { address, primary_name }
+
+### Browse marketplace listings (FREE)
+GET https://tempoid.xyz/api/mpp/marketplace?offset=0&limit=50
+Returns: { total, offset, limit, listings: [{ name, seller, price_usd, active }] }
+
+### Get or set metadata (FREE for get)
+POST https://tempoid.xyz/api/mpp/metadata
+Request: { "name": "yourname", "key": "bio", "action": "get" }
+Returns: { name, key, value }
+
+### Register a .tempo domain (MPP PAID)
+POST https://tempoid.xyz/api/mpp/register
+Payment: MPP with pathUSD on Tempo (Chain ID 4217)
+Content-Type: application/json
+Request: { "name": "yourname", "owner_address": "0x...", "duration_years": 1 }
+Returns: { success, name, owner, tx_hash, price_paid }
+
+### Buy a listed name from marketplace (MPP PAID)
+POST https://tempoid.xyz/api/mpp/buy
+Payment: MPP with pathUSD (price set by seller)
+Content-Type: application/json
+Request: { "name": "yourname", "buyer_address": "0x..." }
+Returns: { success, name, buyer, seller, price_paid, tx_hash }
+
+### Renew a .tempo domain (MPP PAID)
+POST https://tempoid.xyz/api/mpp/renew
+Payment: MPP with pathUSD
+Content-Type: application/json
+Request: { "name": "yourname", "duration_years": 1 }
+Returns: { success, name, renewed_years, price_paid, tx_hash }
+
+### Transfer a name (FREE — server-owned names only)
+POST https://tempoid.xyz/api/mpp/transfer
+Content-Type: application/json
+Request: { "name": "yourname", "to_address": "0x..." }
+Returns: { success, name, from, to, tx_hash }
+
+### List a name for sale (FREE — server-owned names only)
+POST https://tempoid.xyz/api/mpp/list
+Content-Type: application/json
+Request: { "name": "yourname", "price": 10 }
+To cancel: { "name": "yourname", "action": "cancel" }
+Returns: { success, name, action, price_usd, tx_hash }
+
+## Name Rules
+- Minimum 3 characters, maximum 63
+- Lowercase letters (a-z), numbers (0-9), hyphens (-)
+- Cannot start or end with a hyphen
+- Registration duration: 1-10 years
