@@ -1,206 +1,233 @@
 "use client";
 
 import { SearchBar } from "@/components/SearchBar";
-import Link from "next/link";
-
-const PRICING = [
-  { chars: "1-3 chars", price: "$20", example: "abc.tempo", note: "Premium" },
-  { chars: "4 chars", price: "$5", example: "name.tempo", note: null },
-  { chars: "5+ chars", price: "$1", example: "tempoid.tempo", note: null },
-];
-
-const USE_CASES = [
-  {
-    title: "Send by name",
-    desc: "Send pathUSD to anyone using their .tempo name. No more copying wallet addresses.",
-  },
-  {
-    title: "On-chain identity",
-    desc: "Set your bio, avatar, and social links. All stored on-chain, owned by you.",
-  },
-  {
-    title: "Trade names",
-    desc: "List your .tempo name on the marketplace. Buy and sell with atomic payments.",
-  },
-];
-
-const AGENT_STEPS = [
-  { step: "01", title: "Discover", code: "npx agentcash add https://tempoid.xyz" },
-  { step: "02", title: "Check", code: "GET /api/mpp/check/agentname" },
-  { step: "03", title: "Register", code: "POST /api/mpp/register" },
-];
 
 export default function HomePage() {
   return (
-    <div className="min-h-[80vh] flex flex-col">
-      {/* Hero */}
-      <div className="flex-1 flex flex-col justify-center max-w-[720px] mx-auto w-full px-4 py-16 md:py-24">
-        <h1 className="font-serif text-[48px] md:text-[72px] leading-[0.95] tracking-tight text-primary mb-4">
+    <div className="flex flex-col">
+      {/* Hero — full viewport */}
+      <section className="min-h-[90vh] flex flex-col justify-center max-w-[800px] mx-auto w-full px-6">
+        <p className="text-[11px] uppercase tracking-[0.2em] text-tertiary mb-8">
+          Tempo Name Service
+        </p>
+        <h1 className="font-serif text-[52px] md:text-[80px] leading-[0.92] tracking-tight text-primary mb-6">
           Your name,
           <br />
           on Tempo
         </h1>
-        <p className="text-secondary text-sm md:text-lg leading-relaxed mb-10 md:mb-14 max-w-[460px]">
-          Register human-readable{" "}
-          <span className="text-primary font-medium">.tempo</span> names on the
-          Tempo blockchain. Send payments by name, not by address.
+        <p className="text-secondary text-base md:text-lg leading-relaxed mb-12 max-w-[480px]">
+          Human-readable names for the Tempo blockchain.
+          Send payments by name, not by address.
         </p>
+        <div className="max-w-[520px]">
+          <SearchBar />
+        </div>
+      </section>
 
-        <SearchBar />
+      {/* Divider */}
+      <div className="max-w-[800px] mx-auto w-full px-6">
+        <div className="h-[1px] bg-border" />
       </div>
 
       {/* What is TempoID */}
-      <div className="max-w-[720px] mx-auto w-full px-4 mb-16 md:mb-24">
-        <p className="text-xs text-tertiary uppercase tracking-wider mb-6">
-          What is TempoID
-        </p>
-        <div className="bg-white p-6 md:p-8">
-          <p className="text-sm md:text-base text-secondary leading-relaxed">
-            TempoID is the name service for the Tempo blockchain. It turns wallet
-            addresses like <span className="font-mono text-xs text-tertiary">0x767b...d3f9</span> into
-            human-readable names like <span className="font-medium text-primary">yourname.tempo</span>.
-            Register a name, send payments by name, trade names on the marketplace —
-            all on-chain.
-          </p>
+      <section className="max-w-[800px] mx-auto w-full px-6 py-20 md:py-28">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-20">
+          <div>
+            <p className="text-[11px] uppercase tracking-[0.2em] text-tertiary mb-4">
+              About
+            </p>
+            <h2 className="font-serif text-[32px] md:text-[40px] leading-[1.05] text-primary">
+              What is TempoID
+            </h2>
+          </div>
+          <div className="flex flex-col justify-center">
+            <p className="text-sm text-secondary leading-[1.8]">
+              TempoID turns wallet addresses into human-readable names.
+              Instead of copying <span className="font-mono text-[12px] text-tertiary">0x767b...d3f9</span>,
+              you share <span className="font-medium text-primary">yourname.tempo</span>.
+            </p>
+            <p className="text-sm text-secondary leading-[1.8] mt-4">
+              Register a name, send pathUSD to anyone by name, trade names
+              on the built-in marketplace. Everything on-chain, everything yours.
+            </p>
+          </div>
         </div>
+      </section>
+
+      {/* Divider */}
+      <div className="max-w-[800px] mx-auto w-full px-6">
+        <div className="h-[1px] bg-border" />
       </div>
 
-      {/* Use Cases */}
-      <div className="max-w-[720px] mx-auto w-full px-4 mb-16 md:mb-24">
-        <p className="text-xs text-tertiary uppercase tracking-wider mb-6">
-          What you can do
+      {/* Features */}
+      <section className="max-w-[800px] mx-auto w-full px-6 py-20 md:py-28">
+        <p className="text-[11px] uppercase tracking-[0.2em] text-tertiary mb-12">
+          Features
         </p>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-[1px] bg-border">
-          {USE_CASES.map((uc) => (
-            <div key={uc.title} className="bg-white p-6">
-              <p className="text-sm font-medium text-primary">{uc.title}</p>
-              <p className="text-xs text-tertiary mt-2 leading-relaxed">
-                {uc.desc}
-              </p>
-            </div>
-          ))}
+        <div className="space-y-12">
+          <div className="grid grid-cols-1 md:grid-cols-[160px_1fr] gap-4">
+            <p className="text-sm font-medium text-primary">Send by name</p>
+            <p className="text-sm text-secondary leading-[1.8]">
+              Send pathUSD to any .tempo name. No wallet addresses to memorize or copy-paste.
+            </p>
+          </div>
+          <div className="h-[1px] bg-border-light" />
+          <div className="grid grid-cols-1 md:grid-cols-[160px_1fr] gap-4">
+            <p className="text-sm font-medium text-primary">On-chain identity</p>
+            <p className="text-sm text-secondary leading-[1.8]">
+              Set your bio, avatar, and social links. All metadata is stored on-chain and owned by you.
+            </p>
+          </div>
+          <div className="h-[1px] bg-border-light" />
+          <div className="grid grid-cols-1 md:grid-cols-[160px_1fr] gap-4">
+            <p className="text-sm font-medium text-primary">Marketplace</p>
+            <p className="text-sm text-secondary leading-[1.8]">
+              List your name for sale or buy names from others. Atomic payments with 2.5% protocol fee.
+            </p>
+          </div>
         </div>
+      </section>
+
+      {/* Divider */}
+      <div className="max-w-[800px] mx-auto w-full px-6">
+        <div className="h-[1px] bg-border" />
       </div>
 
       {/* Pricing */}
-      <div className="max-w-[720px] mx-auto w-full px-4 mb-16 md:mb-24">
-        <p className="text-xs text-tertiary uppercase tracking-wider mb-6">
+      <section className="max-w-[800px] mx-auto w-full px-6 py-20 md:py-28">
+        <p className="text-[11px] uppercase tracking-[0.2em] text-tertiary mb-12">
           Pricing
         </p>
-        <div className="grid grid-cols-3 gap-[1px] bg-border">
-          {PRICING.map((p) => (
-            <div key={p.chars} className="bg-white p-4 md:p-6 text-center">
-              <p className="text-xs text-tertiary">{p.chars}</p>
-              <p className="text-2xl md:text-3xl font-serif text-primary mt-2">
-                {p.price}
-                <span className="text-xs text-tertiary font-sans">/yr</span>
-              </p>
-              {p.note && (
-                <p className="text-[10px] text-tertiary mt-1 uppercase tracking-wider">
-                  {p.note}
-                </p>
-              )}
-              <p className="text-[11px] text-muted mt-2 font-mono">{p.example}</p>
-            </div>
-          ))}
+        <div className="grid grid-cols-3 gap-8 md:gap-12">
+          <div>
+            <p className="font-serif text-[36px] md:text-[48px] text-primary leading-none">
+              $20
+            </p>
+            <p className="text-xs text-tertiary mt-2">per year</p>
+            <p className="text-[11px] text-muted mt-4">1 — 3 characters</p>
+            <p className="font-mono text-[11px] text-muted mt-1">abc.tempo</p>
+          </div>
+          <div>
+            <p className="font-serif text-[36px] md:text-[48px] text-primary leading-none">
+              $5
+            </p>
+            <p className="text-xs text-tertiary mt-2">per year</p>
+            <p className="text-[11px] text-muted mt-4">4 characters</p>
+            <p className="font-mono text-[11px] text-muted mt-1">name.tempo</p>
+          </div>
+          <div>
+            <p className="font-serif text-[36px] md:text-[48px] text-primary leading-none">
+              $1
+            </p>
+            <p className="text-xs text-tertiary mt-2">per year</p>
+            <p className="text-[11px] text-muted mt-4">5+ characters</p>
+            <p className="font-mono text-[11px] text-muted mt-1">tempoid.tempo</p>
+          </div>
         </div>
-        <p className="text-[11px] text-muted mt-3">
+        <p className="text-[11px] text-muted mt-8">
           Paid in pathUSD on Tempo. All names renew annually.
         </p>
+      </section>
+
+      {/* Divider */}
+      <div className="max-w-[800px] mx-auto w-full px-6">
+        <div className="h-[1px] bg-border" />
       </div>
 
       {/* How it works */}
-      <div className="max-w-[720px] mx-auto w-full px-4 mb-16 md:mb-24">
-        <p className="text-xs text-tertiary uppercase tracking-wider mb-6">
+      <section className="max-w-[800px] mx-auto w-full px-6 py-20 md:py-28">
+        <p className="text-[11px] uppercase tracking-[0.2em] text-tertiary mb-12">
           How it works
         </p>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-[1px] bg-border">
-          <div className="bg-white p-6">
-            <p className="text-xs text-tertiary font-mono">01</p>
-            <p className="text-sm font-medium text-primary mt-2">Search</p>
-            <p className="text-xs text-tertiary mt-1 leading-relaxed">
-              Find your perfect .tempo name
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
+          <div>
+            <p className="font-mono text-[11px] text-muted mb-3">01</p>
+            <p className="text-sm font-medium text-primary mb-2">Search</p>
+            <p className="text-sm text-tertiary leading-[1.7]">
+              Find your .tempo name. Check availability instantly.
             </p>
           </div>
-          <div className="bg-white p-6">
-            <p className="text-xs text-tertiary font-mono">02</p>
-            <p className="text-sm font-medium text-primary mt-2">Register</p>
-            <p className="text-xs text-tertiary mt-1 leading-relaxed">
-              Connect your wallet and pay with pathUSD
+          <div>
+            <p className="font-mono text-[11px] text-muted mb-3">02</p>
+            <p className="text-sm font-medium text-primary mb-2">Register</p>
+            <p className="text-sm text-tertiary leading-[1.7]">
+              Connect your wallet and pay with pathUSD.
             </p>
           </div>
-          <div className="bg-white p-6">
-            <p className="text-xs text-tertiary font-mono">03</p>
-            <p className="text-sm font-medium text-primary mt-2">Use</p>
-            <p className="text-xs text-tertiary mt-1 leading-relaxed">
-              Send, receive, and trade with your name
+          <div>
+            <p className="font-mono text-[11px] text-muted mb-3">03</p>
+            <p className="text-sm font-medium text-primary mb-2">Own</p>
+            <p className="text-sm text-tertiary leading-[1.7]">
+              Your name is on-chain. Send, receive, and trade freely.
             </p>
           </div>
         </div>
+      </section>
+
+      {/* Divider */}
+      <div className="max-w-[800px] mx-auto w-full px-6">
+        <div className="h-[1px] bg-border" />
       </div>
 
-      {/* AI Agents Section */}
-      <div className="max-w-[720px] mx-auto w-full px-4 mb-16 md:mb-24">
-        <div className="bg-primary text-white p-6 md:p-8">
-          <p className="text-xs uppercase tracking-wider opacity-50 mb-4">
-            For AI Agents
-          </p>
-          <h2 className="font-serif text-[28px] md:text-[36px] leading-[1.1] mb-3">
-            Your agent needs
-            <br />
-            an identity too
-          </h2>
-          <p className="text-sm opacity-70 leading-relaxed mb-6 max-w-[480px]">
-            AI agents can register .tempo domains autonomously via MPP.
-            No frontend, no human in the loop. Just one command.
-          </p>
-
-          <div className="space-y-3 mb-6">
-            {AGENT_STEPS.map((s) => (
-              <div key={s.step} className="flex items-start gap-3">
-                <span className="text-[10px] font-mono opacity-40 mt-1">{s.step}</span>
-                <div>
-                  <p className="text-xs font-medium">{s.title}</p>
-                  <p className="text-[11px] font-mono opacity-50 mt-0.5">{s.code}</p>
-                </div>
-              </div>
-            ))}
+      {/* AI Agents */}
+      <section className="max-w-[800px] mx-auto w-full px-6 py-20 md:py-28">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-20">
+          <div>
+            <p className="text-[11px] uppercase tracking-[0.2em] text-tertiary mb-4">
+              For AI Agents
+            </p>
+            <h2 className="font-serif text-[32px] md:text-[40px] leading-[1.05] text-primary">
+              Your agent
+              <br />
+              needs a name
+            </h2>
           </div>
-
-          <div className="flex flex-col sm:flex-row gap-3">
-            <a
-              href="https://tempoid.xyz/llms.txt"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-xs font-mono px-4 py-2 border border-white/20 hover:border-white/40 transition-colors text-center"
-            >
-              Read llms.txt
-            </a>
-            <a
-              href="https://tempoid.xyz/api/openapi.json"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-xs font-mono px-4 py-2 border border-white/20 hover:border-white/40 transition-colors text-center"
-            >
-              OpenAPI Spec
-            </a>
-            <a
-              href="https://www.mppscan.com/server/2a0fa682b26a3951bcf1b55f2552cc48698def04d8634618bdbdd0da86d80767"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-xs font-mono px-4 py-2 border border-white/20 hover:border-white/40 transition-colors text-center"
-            >
-              MPPscan
-            </a>
+          <div className="flex flex-col justify-center">
+            <p className="text-sm text-secondary leading-[1.8]">
+              AI agents can register .tempo domains autonomously via MPP.
+              No frontend needed, no human in the loop.
+            </p>
+            <div className="mt-6 p-4 bg-primary text-white font-mono text-[12px] leading-[1.8] overflow-x-auto">
+              <p className="text-[10px] uppercase tracking-wider text-white/40 mb-3">Add to your agent</p>
+              <p>npx agentcash add https://tempoid.xyz</p>
+            </div>
+            <div className="mt-4 flex gap-4">
+              <a
+                href="/llms.txt"
+                target="_blank"
+                className="text-[11px] text-tertiary hover:text-primary transition-colors"
+              >
+                llms.txt ↗
+              </a>
+              <a
+                href="/api/openapi.json"
+                target="_blank"
+                className="text-[11px] text-tertiary hover:text-primary transition-colors"
+              >
+                OpenAPI ↗
+              </a>
+              <a
+                href="https://www.mppscan.com/server/2a0fa682b26a3951bcf1b55f2552cc48698def04d8634618bdbdd0da86d80767"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[11px] text-tertiary hover:text-primary transition-colors"
+              >
+                MPPscan ↗
+              </a>
+            </div>
           </div>
         </div>
+      </section>
+
+      {/* Divider */}
+      <div className="max-w-[800px] mx-auto w-full px-6">
+        <div className="h-[1px] bg-border" />
       </div>
 
-      {/* Footer info */}
-      <div className="max-w-[720px] mx-auto w-full px-4 mb-16">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 text-[11px] text-muted">
-          <p>
-            Contract:{" "}
+      {/* Footer */}
+      <section className="max-w-[800px] mx-auto w-full px-6 py-16">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+          <div className="text-[11px] text-muted">
             <a
               href="https://explore.tempo.xyz/address/0x9A56AE2275C85aaB13533c00d2cfa42C619Bc3A9"
               target="_blank"
@@ -209,9 +236,10 @@ export default function HomePage() {
             >
               0x9A56...Bc3A9
             </a>
-            {" "}on Tempo Mainnet
-          </p>
-          <div className="flex gap-4">
+            <span className="mx-2">·</span>
+            Tempo Mainnet
+          </div>
+          <div className="flex gap-6 text-[11px] text-muted">
             <a
               href="https://github.com/KendineCrypto/tempoid"
               target="_blank"
@@ -230,7 +258,7 @@ export default function HomePage() {
             </a>
           </div>
         </div>
-      </div>
+      </section>
     </div>
   );
 }
