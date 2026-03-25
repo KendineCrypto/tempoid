@@ -15,10 +15,9 @@ function getMppx() {
     _mppx = Mppx.create({
       methods: [
         tempo({
-          currency: "0x20c0000000000000000000000000000000000000",
-          // recipient = server wallet address (same as DEPLOYER_PRIVATE_KEY)
-          // AI agent pays here → server uses same pathUSD to register → transfers name to agent
-          // Net cost to us: $0 (self-funding loop)
+          currency: "0x20c000000000000000000000b9537d11c60e8b50", // USDC.e (Tempo Wallet token)
+          // AI agent pays USDC.e → server wallet receives it
+          // Server uses its own pathUSD to register on contract → transfers name to agent
           recipient: (process.env.TEMPOID_TREASURY_ADDRESS ||
             "0x767bD65bc6992d21956248103b1ac67b24571b89") as `0x${string}`,
         }),

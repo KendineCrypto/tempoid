@@ -221,10 +221,12 @@ const PATHUSD_ABI = [
 ] as const;
 
 // --- MPP Payment Handler (MCP transport) ---
+const USDC_E = "0x20c000000000000000000000b9537d11c60e8b50" as const; // USDC.e (Tempo Wallet token)
+
 const payment = Mppx.create({
   methods: [
     tempo({
-      currency: PATHUSD,
+      currency: USDC_E, // AI agents pay with USDC.e (Tempo Wallet's token)
       recipient: TREASURY,
     }),
   ],

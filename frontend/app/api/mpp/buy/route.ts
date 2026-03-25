@@ -15,7 +15,7 @@ function getMppx() {
     _mppx = Mppx.create({
       methods: [
         tempo({
-          currency: "0x20c0000000000000000000000000000000000000",
+          currency: "0x20c000000000000000000000b9537d11c60e8b50", // USDC.e (Tempo Wallet token)
           recipient: (process.env.TEMPOID_TREASURY_ADDRESS ||
             "0x767bD65bc6992d21956248103b1ac67b24571b89") as `0x${string}`,
         }),
