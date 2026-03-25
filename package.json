@@ -1,0 +1,29 @@
+{
+  "name": "tempoid",
+  "version": "1.0.0",
+  "description": "Register `.tempo` names on the Tempo blockchain. Use human-readable names like `fatih.tempo` instead of long wallet addresses.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/KendineCrypto/tempoid.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/KendineCrypto/tempoid/issues"
+  },
+  "homepage": "https://github.com/KendineCrypto/tempoid#readme",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.28.0",
+    "dotenv": "^17.3.1",
+    "mppx": "^0.4.9",
+    "tsx": "^4.21.0",
+    "viem": "^2.47.6",
+    "zod": "^4.3.6"
+  }
+}

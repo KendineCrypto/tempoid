@@ -1,8 +1,25 @@
-# TempOID — Tempo Name Service
+# TempoID — Tempo Name Service
 # https://tempoid.xyz
 
-TempOID is the identity and naming layer for the Tempo blockchain.
+TempoID is the identity and naming layer for the Tempo blockchain.
 Register .tempo names, send payments by name, trade names on the marketplace.
+
+## MCP Server (for AI agents)
+Install and connect the TempoID MCP server for direct tool access:
+Repository: https://github.com/KendineCrypto/tempoid
+Server: mcp-server/index.ts
+Command: npx tsx mcp-server/index.ts
+
+Available tools:
+- check_domain: Check availability and pricing (free)
+- resolve_domain: Resolve name to address (free)
+- reverse_lookup: Address to name (free)
+- get_domain_info: Detailed domain info (free)
+- get_names_of_owner: List all domains of an address (free)
+- browse_marketplace: Browse listed domains (free)
+- register_domain: Register a .tempo domain (paid via MPP)
+- buy_domain: Buy from marketplace (paid via MPP)
+- renew_domain: Renew registration (paid via MPP)
 
 ## Network Info
 Chain: Tempo Mainnet (Chain ID 4217)

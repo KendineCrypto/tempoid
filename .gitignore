@@ -27,3 +27,5 @@ Thumbs.db
 
 # Claude
 .claude/
+demo/.env
+mcp-server/.env
