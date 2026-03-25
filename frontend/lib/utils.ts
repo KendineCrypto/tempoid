@@ -14,7 +14,7 @@ export function validateName(name: string): {
   valid: boolean;
   error?: string;
 } {
-  if (name.length < 3) return { valid: false, error: "Minimum 3 characters" };
+  if (name.length < 1) return { valid: false, error: "Minimum 1 character" };
   if (name.length > 63) return { valid: false, error: "Maximum 63 characters" };
   if (name.startsWith("-") || name.endsWith("-"))
     return { valid: false, error: "Cannot start or end with a hyphen" };
@@ -29,7 +29,7 @@ export function validateName(name: string): {
 /**
  * Launch day discount flag — set to false after launch day.
  */
-export const LAUNCH_DAY_DISCOUNT = true;
+export const LAUNCH_DAY_DISCOUNT = false;
 
 /**
  * Calculate yearly fee based on name length (display value, not wei).
