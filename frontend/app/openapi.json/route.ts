@@ -19,7 +19,7 @@ export async function GET() {
       "/api/mpp/check/{name}": {
         get: {
           operationId: "checkAvailability",
-          summary: "Check if a .tempo name is available and get pricing",
+          summary: "Check if a .tempo name is available and get pricing. If the name is taken but listed on the marketplace, returns listing info so agents can buy it directly.",
           parameters: [
             {
               name: "name",
@@ -43,8 +43,17 @@ export async function GET() {
                       currency: { type: "string", description: "Payment currency" },
                       decimals: { type: "number", description: "Token decimals" },
                       price_raw: { type: "string", description: "Raw price in smallest unit" },
+                      owner: { type: "string", description: "Current owner address (if taken)" },
+                      expiry: { type: "number", description: "Expiry timestamp (if taken)" },
+                      is_expired: { type: "boolean", description: "Whether the name is expired" },
+                      listed_for_sale: { type: "boolean", description: "Whether the name is listed on the marketplace" },
+                      listing_seller: { type: "string", description: "Seller address (if listed)" },
+                      listing_price_usd: { type: "number", description: "Listing price in USD (if listed)" },
+                      listing_price_raw: { type: "string", description: "Listing price raw (if listed)" },
+                      buy_endpoint: { type: "string", description: "Endpoint to buy this name (if listed)" },
+                      message: { type: "string", description: "Human-readable message about the name status" },
                     },
-                    required: ["name", "available", "price_per_year", "currency"],
+                    required: ["name", "available", "price_per_year_usd", "currency"],
                   },
                 },
               },

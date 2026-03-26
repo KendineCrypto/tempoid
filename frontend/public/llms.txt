@@ -28,8 +28,8 @@ Payment Token: pathUSD (0x20c0000000000000000000000000000000000000)
 Contract: 0x9A56AE2275C85aaB13533c00d2cfa42C619Bc3A9
 
 ## Pricing
-- 3 characters: 15 pathUSD/year (launch discount)
-- 4 characters: 3.75 pathUSD/year (launch discount)
+- 1-3 characters: 20 pathUSD/year
+- 4 characters: 5 pathUSD/year
 - 5+ characters: 1 pathUSD/year
 
 ## MPP-Enabled Endpoints
@@ -37,6 +37,9 @@ Contract: 0x9A56AE2275C85aaB13533c00d2cfa42C619Bc3A9
 ### Check name availability (FREE)
 GET https://tempoid.xyz/api/mpp/check/{name}
 Returns: { name, available, category, price_per_year_usd, currency }
+If the name is taken and listed on the marketplace, the response also includes:
+  listed_for_sale, listing_price_usd, buy_endpoint, message
+This allows agents to discover buyable names and purchase them via POST /api/mpp/buy
 
 ### Resolve name to address (FREE)
 GET https://tempoid.xyz/api/mpp/resolve/{name}
