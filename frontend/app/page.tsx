@@ -38,9 +38,9 @@ export default function HomePage() {
         <p className="text-xs text-tertiary uppercase tracking-wider mb-6">
           Pricing
         </p>
-        <div className="grid grid-cols-3 gap-[1px] bg-border">
+        <div className="grid grid-cols-3 gap-4">
           {PRICING.map((p) => (
-            <div key={p.chars} className="bg-white p-4 md:p-6 text-center">
+            <div key={p.chars} className="bg-white/80 backdrop-blur-sm p-4 md:p-6 text-center rounded-lg shadow-[0_1px_3px_rgba(0,0,0,0.06)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.08)] transition-shadow">
               <p className="text-xs text-tertiary">{p.chars}</p>
               <p className="text-2xl md:text-3xl font-serif text-primary mt-2">
                 {p.price}
@@ -57,9 +57,9 @@ export default function HomePage() {
         <p className="text-xs text-tertiary uppercase tracking-wider mb-6">
           How it works
         </p>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-[1px] bg-border">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {STEPS.map((s) => (
-            <div key={s.step} className="bg-white p-6">
+            <div key={s.step} className="bg-white/80 backdrop-blur-sm p-6 rounded-lg shadow-[0_1px_3px_rgba(0,0,0,0.06)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.08)] transition-shadow">
               <p className="text-xs text-tertiary font-mono">{s.step}</p>
               <p className="text-sm font-medium text-primary mt-2">{s.title}</p>
               <p className="text-xs text-tertiary mt-1 leading-relaxed">
@@ -72,7 +72,7 @@ export default function HomePage() {
 
       {/* AI Agents */}
       <div className="max-w-[720px] mx-auto w-full px-4 mb-16 md:mb-24">
-        <div className="bg-primary text-white p-6 md:p-8">
+        <div className="bg-primary text-white p-6 md:p-8 rounded-lg shadow-[0_4px_24px_rgba(0,0,0,0.15)]">
           <p className="text-xs uppercase tracking-wider opacity-50 mb-4">
             For AI Agents
           </p>

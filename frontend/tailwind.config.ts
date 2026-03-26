@@ -24,6 +24,11 @@ const config: Config = {
       },
       borderRadius: {
         none: "0px",
+        sm: "4px",
+        DEFAULT: "6px",
+        md: "8px",
+        lg: "12px",
+        xl: "16px",
       },
     },
   },
