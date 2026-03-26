@@ -5,6 +5,19 @@ import { useRouter } from "next/navigation";
 import { validateName } from "@/lib/utils";
 import { useNameAvailability } from "@/hooks/useNameService";
 
+const PLACEHOLDER_NAMES = [
+  "satoshi",
+  "vitalik",
+  "claude",
+  "agent",
+  "defi",
+  "tempo",
+  "nakamoto",
+  "ethereum",
+  "bitcoin",
+  "web3",
+];
+
 function useDebounce(value: string, delay: number) {
   const [debounced, setDebounced] = useState(value);
   const timerRef = useRef<ReturnType<typeof setTimeout>>();
@@ -17,8 +30,45 @@ function useDebounce(value: string, delay: number) {
   return debounced;
 }
 
+function useAnimatedPlaceholder() {
+  const [placeholder, setPlaceholder] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
+  const indexRef = useRef(0);
+  const charRef = useRef(0);
+
+  useEffect(() => {
+    const currentName = PLACEHOLDER_NAMES[indexRef.current];
+    const targetText = currentName + ".tempo";
+
+    const timer = setTimeout(() => {
+      if (!isDeleting) {
+        if (charRef.current < targetText.length) {
+          setPlaceholder(targetText.slice(0, charRef.current + 1));
+          charRef.current++;
+        } else {
+          setTimeout(() => setIsDeleting(true), 1500);
+        }
+      } else {
+        if (charRef.current > 0) {
+          charRef.current--;
+          setPlaceholder(targetText.slice(0, charRef.current));
+        } else {
+          setIsDeleting(false);
+          indexRef.current = (indexRef.current + 1) % PLACEHOLDER_NAMES.length;
+        }
+      }
+    }, isDeleting ? 40 : 80);
+
+    return () => clearTimeout(timer);
+  }, [placeholder, isDeleting]);
+
+  return placeholder;
+}
+
 export function SearchBar() {
   const [input, setInput] = useState("");
+  const [isFocused, setIsFocused] = useState(false);
+  const animatedPlaceholder = useAnimatedPlaceholder();
   const router = useRouter();
   const name = input.toLowerCase().replace(/\.tempo$/, "").trim();
   const validation = name.length > 0 ? validateName(name) : null;
@@ -49,9 +99,11 @@ export function SearchBar() {
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value.toLowerCase())}
-          placeholder="Search a name"
+          onFocus={() => setIsFocused(true)}
+          onBlur={() => setIsFocused(false)}
+          placeholder={isFocused ? "Search a name" : animatedPlaceholder || "Search a name"}
           className="w-full py-3 md:py-4 pr-28 md:pr-32 text-[22px] md:text-[32px] font-serif bg-transparent
-                     text-primary placeholder:text-muted focus:outline-none tracking-tight"
+                     text-primary placeholder:text-[#999] focus:outline-none tracking-tight"
         />
         <div className="absolute inset-y-0 right-0 flex items-center gap-3">
           <span className="text-tertiary text-sm font-sans">.tempo</span>

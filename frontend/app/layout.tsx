@@ -12,16 +12,16 @@ export const metadata: Metadata = {
     icon: "/favicon.svg",
   },
   openGraph: {
-    title: "TempID — Tempo Name Service",
+    title: "TempoID — Tempo Name Service",
     description:
       "Register human-readable .tempo names on the Tempo blockchain. Send, receive, trade — simply.",
-    siteName: "TempID",
+    siteName: "TempoID",
     type: "website",
     url: "https://tempoid.xyz",
   },
   twitter: {
     card: "summary_large_image",
-    title: "TempID — Tempo Name Service",
+    title: "TempoID — Tempo Name Service",
     description:
       "Register human-readable .tempo names on the Tempo blockchain.",
     creator: "@tempoidapp",
@@ -73,22 +73,38 @@ export default function RootLayout({
           <footer className="mt-20 md:mt-32 border-t border-border">
             <div className="max-w-[1200px] mx-auto px-4 md:px-6 py-8 md:py-12 flex flex-col md:flex-row items-center justify-between gap-4">
               <span className="text-sm text-tertiary font-serif">tempo|id</span>
-              <div className="flex items-center gap-6 text-sm text-tertiary">
+              <div className="flex items-center gap-6 text-sm text-tertiary flex-wrap justify-center">
                 <a
                   href="https://x.com/tempoidapp"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="hover:text-primary transition-colors"
                 >
-                  @tempoidapp →
+                  Twitter
                 </a>
                 <a
-                  href="https://explore.tempo.xyz"
+                  href="https://github.com/KendineCrypto/tempoid"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="hover:text-primary transition-colors"
                 >
-                  Explorer →
+                  GitHub
+                </a>
+                <a
+                  href="https://www.mppscan.com/server/2a0fa682b26a3951bcf1b55f2552cc48698def04d8634618bdbdd0da86d80767"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-primary transition-colors"
+                >
+                  MPPscan
+                </a>
+                <a
+                  href="https://explore.tempo.xyz/address/0x9a56ae2275c85aab13533c00d2cfa42c619bc3a9"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-primary transition-colors"
+                >
+                  Explorer
                 </a>
                 <a
                   href="https://tempo.xyz"
@@ -96,7 +112,7 @@ export default function RootLayout({
                   rel="noopener noreferrer"
                   className="hover:text-primary transition-colors"
                 >
-                  Tempo →
+                  Tempo
                 </a>
               </div>
             </div>
