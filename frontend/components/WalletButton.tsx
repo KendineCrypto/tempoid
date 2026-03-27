@@ -1,7 +1,6 @@
 "use client";
 
-import { useAccount, useConnect, useDisconnect } from "wagmi";
-import { injected } from "wagmi/connectors";
+import { useAccount, useConnect, useDisconnect, useConnectors } from "wagmi";
 import { useState, useRef, useEffect } from "react";
 import { shortenAddress } from "@/lib/utils";
 
@@ -9,6 +8,8 @@ export function WalletButton() {
   const { address, isConnected } = useAccount();
   const { connect } = useConnect();
   const { disconnect } = useDisconnect();
+  const connectors = useConnectors();
+  const [showOptions, setShowOptions] = useState(false);
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -21,6 +22,7 @@ export function WalletButton() {
     function handleClick(e: MouseEvent) {
       if (ref.current && !ref.current.contains(e.target as Node)) {
         setOpen(false);
+        setShowOptions(false);
       }
     }
     document.addEventListener("mousedown", handleClick);
@@ -37,13 +39,50 @@ export function WalletButton() {
 
   if (!isConnected) {
     return (
-      <button
-        onClick={() => connect({ connector: injected() })}
-        className="px-6 py-2 bg-primary text-white text-sm
-                   hover:opacity-80 transition-opacity"
-      >
-        Connect Wallet
-      </button>
+      <div ref={ref} className="relative">
+        <button
+          onClick={() => setShowOptions(!showOptions)}
+          className="px-6 py-2 bg-primary text-white text-sm
+                     hover:opacity-80 transition-opacity"
+        >
+          Connect Wallet
+        </button>
+
+        {showOptions && (
+          <div className="absolute right-0 mt-1 w-56 bg-white border border-border shadow-lg z-50 rounded-lg overflow-hidden">
+            {connectors.map((connector) => (
+              <button
+                key={connector.uid}
+                onClick={() => {
+                  connect({ connector });
+                  setShowOptions(false);
+                }}
+                className="flex items-center gap-3 w-full text-left px-4 py-3 text-sm text-primary
+                           hover:bg-bg transition-colors border-b border-border-light last:border-b-0"
+              >
+                {connector.name === "Injected" || connector.name === "MetaMask" ? (
+                  <>
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                      <rect width="20" height="20" rx="4" fill="#F6851B"/>
+                      <path d="M15.5 4L10.5 7.8L11.3 5.5L15.5 4Z" fill="white" fillOpacity="0.8"/>
+                    </svg>
+                    <span>MetaMask</span>
+                  </>
+                ) : (
+                  <>
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                      <rect width="20" height="20" rx="4" fill="#1A1A1A"/>
+                      <path d="M10 5C7.5 5 6 7 6 10s1.5 5 4 5 4-2 4-5-1.5-5-4-5z" fill="white" fillOpacity="0.8"/>
+                    </svg>
+                    <span>Tempo Wallet</span>
+                    <span className="text-[10px] text-tertiary ml-auto">passkey</span>
+                  </>
+                )}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
     );
   }
 
@@ -59,7 +98,7 @@ export function WalletButton() {
       </button>
 
       {open && (
-        <div className="absolute right-0 mt-1 w-44 bg-white border border-border shadow-sm z-50">
+        <div className="absolute right-0 mt-1 w-44 bg-white border border-border shadow-sm z-50 rounded-lg overflow-hidden">
           <a
             href="/account"
             className="block px-4 py-3 text-sm text-secondary hover:bg-bg transition-colors"
