@@ -11,7 +11,7 @@ export const config = createConfig({
     webAuthn({ keyManager: KeyManager.http("https://keys.tempo.xyz") }),
   ],
   chains: [tempo, tempoTestnet],
-  multiInjectedProviderDiscovery: true,
+  multiInjectedProviderDiscovery: false,
   transports: {
     [tempo.id]: http("https://rpc.presto.tempo.xyz"),
     [tempoTestnet.id]: http("https://rpc.moderato.tempo.xyz"),
