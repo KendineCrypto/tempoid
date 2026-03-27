@@ -83,7 +83,8 @@ export default function HomePage() {
           </h2>
           <p className="text-sm opacity-70 leading-relaxed mb-6 max-w-[480px]">
             AI agents can register .tempo domains autonomously via MPP.
-            No frontend, no human in the loop. Just one command.
+            No frontend, no human in the loop. Now with native Foundry
+            support &mdash; no private keys, just your passkey.
           </p>
 
           <div className="space-y-3 mb-6">
@@ -111,6 +112,12 @@ export default function HomePage() {
           </div>
 
           <div className="flex flex-col sm:flex-row gap-3">
+            <a
+              href="/developers"
+              className="text-xs font-mono px-4 py-2 bg-white text-primary hover:bg-white/90 transition-colors text-center font-medium"
+            >
+              Developer Docs
+            </a>
             <a
               href="/llms.txt"
               target="_blank"
