@@ -67,7 +67,14 @@ export function WalletButton() {
                 <button
                   key={connector.uid}
                   onClick={() => {
-                    connect({ connector });
+                    console.log("Connecting with:", connector.type, connector.name);
+                    connect(
+                      { connector },
+                      {
+                        onSuccess: (data) => console.log("Connected:", data),
+                        onError: (err) => console.error("Connect error:", err),
+                      }
+                    );
                     setShowOptions(false);
                   }}
                   className="flex items-center gap-3 w-full text-left px-4 py-3 text-sm text-primary
