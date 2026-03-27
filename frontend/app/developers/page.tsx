@@ -472,7 +472,7 @@ export default function DevelopersPage() {
           </p>
           <div className="flex flex-wrap gap-3">
             <a
-              href="https://tempo.xyz"
+              href="https://wallet.tempo.xyz/"
               target="_blank"
               rel="noopener noreferrer"
               className="text-xs font-mono px-4 py-2 border border-white/20 hover:border-white/40 transition-colors"
