@@ -8,7 +8,10 @@ export { tempo, tempoTestnet };
 export const config = createConfig({
   connectors: [
     injected(),
-    webAuthn({ keyManager: KeyManager.http("https://keys.tempo.xyz") }),
+    webAuthn({
+      keyManager: KeyManager.http("https://keys.tempo.xyz"),
+      rpId: "keys.tempo.xyz",
+    }),
   ],
   chains: [tempo, tempoTestnet],
   multiInjectedProviderDiscovery: false,
