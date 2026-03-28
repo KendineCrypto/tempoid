@@ -51,6 +51,7 @@ export default function RootLayout({
                 <Link href="/send" className="text-sm text-secondary hover:text-primary transition-colors">Send</Link>
                 <Link href="/marketplace" className="text-sm text-secondary hover:text-primary transition-colors">Marketplace</Link>
                 <Link href="/account" className="text-sm text-secondary hover:text-primary transition-colors">Account</Link>
+                <Link href="/chat" className="text-sm text-secondary hover:text-primary transition-colors">Chat</Link>
                 <Link href="/developers" className="text-sm text-secondary hover:text-primary transition-colors">Developers</Link>
                 <WalletButton />
               </div>
@@ -58,6 +59,7 @@ export default function RootLayout({
                 <Link href="/send" className="text-xs text-secondary">Send</Link>
                 <Link href="/marketplace" className="text-xs text-secondary">Market</Link>
                 <Link href="/account" className="text-xs text-secondary">Account</Link>
+                <Link href="/chat" className="text-xs text-secondary">Chat</Link>
                 <Link href="/developers" className="text-xs text-secondary">Dev</Link>
                 <WalletButton />
               </div>
