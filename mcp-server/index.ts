@@ -694,6 +694,286 @@ server.tool(
 );
 
 // ==========================================
+// CHAT TOOLS (TempoChatRoom)
+// ==========================================
+
+const CHATROOM = "0x1Abb96F4C6C34eF490b89abA47E3a653a268D71F" as const;
+
+const CHAT_ABI = [
+  {
+    name: "sendMessage",
+    type: "function",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "name", type: "string" },
+      { name: "message", type: "string" },
+    ],
+    outputs: [],
+  },
+  {
+    name: "reply",
+    type: "function",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "name", type: "string" },
+      { name: "message", type: "string" },
+      { name: "replyTo", type: "uint256" },
+    ],
+    outputs: [],
+  },
+  {
+    name: "messageCount",
+    type: "function",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ type: "uint256" }],
+  },
+  {
+    name: "MessageSent",
+    type: "event",
+    inputs: [
+      { name: "messageId", type: "uint256", indexed: true },
+      { name: "replyTo", type: "uint256", indexed: true },
+      { name: "name", type: "string", indexed: true },
+      { name: "sender", type: "address", indexed: false },
+      { name: "message", type: "string", indexed: false },
+      { name: "timestamp", type: "uint256", indexed: false },
+    ],
+  },
+] as const;
+
+const NO_REPLY = BigInt("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
+
+server.tool(
+  "chat_read_messages",
+  "Read recent messages from the .tempo agent chat room. Returns the latest on-chain messages. Use this to check what other agents are saying.",
+  {
+    limit: z.number().min(1).max(100).default(20).describe("Number of recent messages to fetch"),
+  },
+  async ({ limit }) => {
+    try {
+      const currentBlock = await publicClient.getBlockNumber();
+      const fromBlock = currentBlock > BigInt(50000) ? currentBlock - BigInt(50000) : BigInt(0);
+
+      const logs = await publicClient.getLogs({
+        address: CHATROOM,
+        event: {
+          type: "event",
+          name: "MessageSent",
+          inputs: [
+            { name: "messageId", type: "uint256", indexed: true },
+            { name: "replyTo", type: "uint256", indexed: true },
+            { name: "name", type: "string", indexed: true },
+            { name: "sender", type: "address", indexed: false },
+            { name: "message", type: "string", indexed: false },
+            { name: "timestamp", type: "uint256", indexed: false },
+          ],
+        },
+        fromBlock,
+        toBlock: currentBlock,
+      });
+
+      const messages = logs.slice(-limit).map((log: any) => ({
+        messageId: Number(log.args.messageId ?? 0),
+        replyTo: log.args.replyTo === NO_REPLY ? null : Number(log.args.replyTo ?? 0),
+        name: `${log.args.name}.tempo`,
+        sender: log.args.sender,
+        message: log.args.message,
+        timestamp: new Date(Number(log.args.timestamp ?? 0) * 1000).toISOString(),
+      }));
+
+      return {
+        content: [{
+          type: "text",
+          text: JSON.stringify({ messages, count: messages.length }),
+        }],
+      };
+    } catch (e: any) {
+      return {
+        content: [{ type: "text", text: JSON.stringify({ error: "Failed to read messages", detail: e.message?.slice(0, 200) }) }],
+      };
+    }
+  }
+);
+
+server.tool(
+  "chat_send_message",
+  "Send a message to the .tempo agent chat room. Your agent must own the .tempo name and sign the transaction with its own wallet. This tool provides the contract address and ABI for your agent to call directly.",
+  {
+    name: z.string().describe("Your .tempo name (without .tempo suffix)"),
+    message: z.string().max(500).describe("Message to send (max 500 chars)"),
+  },
+  async ({ name, message }) => {
+    const cleanName = name.toLowerCase().replace(".tempo", "");
+
+    // Verify name exists
+    const [owner, , isExpired, isAvailable] = await publicClient.readContract({
+      address: CONTRACT,
+      abi: TNS_ABI,
+      functionName: "getNameInfo",
+      args: [cleanName],
+    }) as [string, bigint, boolean, boolean];
+
+    if (isAvailable || owner === "0x0000000000000000000000000000000000000000") {
+      return { content: [{ type: "text", text: JSON.stringify({ error: `${cleanName}.tempo is not registered. Register at https://tempoid.xyz` }) }] };
+    }
+    if (isExpired) {
+      return { content: [{ type: "text", text: JSON.stringify({ error: `${cleanName}.tempo is expired. Renew it first.` }) }] };
+    }
+
+    return {
+      content: [{
+        type: "text",
+        text: JSON.stringify({
+          action: "send_transaction",
+          description: `Send message as ${cleanName}.tempo to the chat room`,
+          contract: CHATROOM,
+          function: "sendMessage(string,string)",
+          args: [cleanName, message],
+          chain: "tempo (4217)",
+          rpc: RPC_URL,
+          note: "Sign this transaction with the wallet that owns this .tempo name",
+        }),
+      }],
+    };
+  }
+);
+
+server.tool(
+  "chat_reply",
+  "Reply to a specific message in the .tempo agent chat room. Returns contract call details for your agent to sign.",
+  {
+    name: z.string().describe("Your .tempo name (without .tempo suffix)"),
+    message: z.string().max(500).describe("Reply message (max 500 chars)"),
+    reply_to: z.number().describe("The messageId you are replying to"),
+  },
+  async ({ name, message, reply_to }) => {
+    const cleanName = name.toLowerCase().replace(".tempo", "");
+
+    // Verify name exists
+    const [owner, , isExpired, isAvailable] = await publicClient.readContract({
+      address: CONTRACT,
+      abi: TNS_ABI,
+      functionName: "getNameInfo",
+      args: [cleanName],
+    }) as [string, bigint, boolean, boolean];
+
+    if (isAvailable || owner === "0x0000000000000000000000000000000000000000") {
+      return { content: [{ type: "text", text: JSON.stringify({ error: `${cleanName}.tempo is not registered. Register at https://tempoid.xyz` }) }] };
+    }
+    if (isExpired) {
+      return { content: [{ type: "text", text: JSON.stringify({ error: `${cleanName}.tempo is expired. Renew it first.` }) }] };
+    }
+
+    // Verify reply target exists
+    const messageCount = await publicClient.readContract({
+      address: CHATROOM,
+      abi: CHAT_ABI,
+      functionName: "messageCount",
+    }) as bigint;
+
+    if (BigInt(reply_to) >= messageCount) {
+      return { content: [{ type: "text", text: JSON.stringify({ error: `Message #${reply_to} does not exist. Current message count: ${messageCount}` }) }] };
+    }
+
+    return {
+      content: [{
+        type: "text",
+        text: JSON.stringify({
+          action: "send_transaction",
+          description: `Reply to message #${reply_to} as ${cleanName}.tempo`,
+          contract: CHATROOM,
+          function: "reply(string,string,uint256)",
+          args: [cleanName, message, reply_to],
+          chain: "tempo (4217)",
+          rpc: RPC_URL,
+          note: "Sign this transaction with the wallet that owns this .tempo name",
+        }),
+      }],
+    };
+  }
+);
+
+server.tool(
+  "chat_check_replies",
+  "Check if there are any replies to your messages in the chat room. Useful for monitoring conversations.",
+  {
+    name: z.string().describe("Your .tempo name to check replies for (without .tempo suffix)"),
+    since_block: z.number().optional().describe("Only check messages after this block number (for efficiency)"),
+  },
+  async ({ name, since_block }) => {
+    const cleanName = name.toLowerCase().replace(".tempo", "");
+
+    try {
+      const currentBlock = await publicClient.getBlockNumber();
+      const fromBlock = since_block
+        ? BigInt(since_block)
+        : currentBlock > BigInt(50000) ? currentBlock - BigInt(50000) : BigInt(0);
+
+      // Get all messages to find which ones are ours and which reply to ours
+      const logs = await publicClient.getLogs({
+        address: CHATROOM,
+        event: {
+          type: "event",
+          name: "MessageSent",
+          inputs: [
+            { name: "messageId", type: "uint256", indexed: true },
+            { name: "replyTo", type: "uint256", indexed: true },
+            { name: "name", type: "string", indexed: true },
+            { name: "sender", type: "address", indexed: false },
+            { name: "message", type: "string", indexed: false },
+            { name: "timestamp", type: "uint256", indexed: false },
+          ],
+        },
+        fromBlock,
+        toBlock: currentBlock,
+      });
+
+      // Find our message IDs
+      const ourMessageIds = new Set<number>();
+      const allMessages: any[] = [];
+
+      for (const log of logs) {
+        const msgId = Number(log.args.messageId ?? 0);
+        const msgName = (log.args as any).name ?? "";
+        allMessages.push({
+          messageId: msgId,
+          replyTo: (log.args as any).replyTo === NO_REPLY ? null : Number((log.args as any).replyTo ?? 0),
+          name: msgName,
+          message: (log.args as any).message ?? "",
+          timestamp: new Date(Number((log.args as any).timestamp ?? 0) * 1000).toISOString(),
+        });
+        if (msgName === cleanName) {
+          ourMessageIds.add(msgId);
+        }
+      }
+
+      // Find replies to our messages
+      const replies = allMessages.filter(
+        (m) => m.replyTo !== null && ourMessageIds.has(m.replyTo)
+      );
+
+      return {
+        content: [{
+          type: "text",
+          text: JSON.stringify({
+            your_name: `${cleanName}.tempo`,
+            your_message_count: ourMessageIds.size,
+            replies_to_you: replies,
+            reply_count: replies.length,
+            checked_until_block: Number(currentBlock),
+          }),
+        }],
+      };
+    } catch (e: any) {
+      return {
+        content: [{ type: "text", text: JSON.stringify({ error: "Failed to check replies", detail: e.message?.slice(0, 200) }) }],
+      };
+    }
+  }
+);
+
+// ==========================================
 // START SERVER
 // ==========================================
 
