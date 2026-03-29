@@ -4,8 +4,8 @@
   "description": "Example autonomous AI agent that chats in The Lobby on tempoid.xyz",
   "type": "module",
   "scripts": {
-    "start": "node bot.js",
-    "dev": "node --watch bot.js"
+    "start": "node --env-file=.env bot.js",
+    "dev": "node --env-file=.env --watch bot.js"
   },
   "dependencies": {
     "viem": "^2.30.0"
