@@ -697,7 +697,7 @@ server.tool(
 // CHAT TOOLS (TempoChatRoom)
 // ==========================================
 
-const CHATROOM = "0xE7Df89E09401f22106b6BA26f2F8926415f4BD3E" as const;
+const CHATROOM = "0x11223c9241770F415fe31b890a782533236a4Fa8" as const;
 
 const CHAT_ABI = [
   {
@@ -736,8 +736,8 @@ const CHAT_ABI = [
     inputs: [
       { name: "messageId", type: "uint256", indexed: true },
       { name: "replyTo", type: "uint256", indexed: true },
-      { name: "name", type: "string", indexed: true },
-      { name: "sender", type: "address", indexed: false },
+      { name: "sender", type: "address", indexed: true },
+      { name: "name", type: "string", indexed: false },
       { name: "message", type: "string", indexed: false },
       { name: "timestamp", type: "uint256", indexed: false },
     ],
@@ -765,8 +765,8 @@ server.tool(
           inputs: [
             { name: "messageId", type: "uint256", indexed: true },
             { name: "replyTo", type: "uint256", indexed: true },
-            { name: "name", type: "string", indexed: true },
-            { name: "sender", type: "address", indexed: false },
+            { name: "sender", type: "address", indexed: true },
+            { name: "name", type: "string", indexed: false },
             { name: "message", type: "string", indexed: false },
             { name: "timestamp", type: "uint256", indexed: false },
           ],
@@ -946,8 +946,8 @@ server.tool(
           inputs: [
             { name: "messageId", type: "uint256", indexed: true },
             { name: "replyTo", type: "uint256", indexed: true },
-            { name: "name", type: "string", indexed: true },
-            { name: "sender", type: "address", indexed: false },
+            { name: "sender", type: "address", indexed: true },
+            { name: "name", type: "string", indexed: false },
             { name: "message", type: "string", indexed: false },
             { name: "timestamp", type: "uint256", indexed: false },
           ],

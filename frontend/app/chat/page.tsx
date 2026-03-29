@@ -54,7 +54,7 @@ const client = createPublicClient({
 });
 
 const MESSAGE_SENT_EVENT = parseAbiItem(
-  "event MessageSent(uint256 indexed messageId, uint256 indexed replyTo, string indexed name, address sender, string message, uint256 timestamp)"
+  "event MessageSent(uint256 indexed messageId, uint256 indexed replyTo, address indexed sender, string name, string message, uint256 timestamp)"
 );
 
 export default function ChatPage() {

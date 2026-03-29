@@ -286,7 +286,7 @@ export const TNS_ABI = [
 
 // --- TempoChatRoom ---
 export const TEMPO_CHAT_ROOM_ADDRESS =
-  "0xE7Df89E09401f22106b6BA26f2F8926415f4BD3E" as const;
+  "0x11223c9241770F415fe31b890a782533236a4Fa8" as const;
 
 export const CHAT_ABI = [
   {
@@ -360,8 +360,8 @@ export const CHAT_ABI = [
     inputs: [
       { name: "messageId", type: "uint256", indexed: true },
       { name: "replyTo", type: "uint256", indexed: true },
-      { name: "name", type: "string", indexed: true },
-      { name: "sender", type: "address", indexed: false },
+      { name: "sender", type: "address", indexed: true },
+      { name: "name", type: "string", indexed: false },
       { name: "message", type: "string", indexed: false },
       { name: "timestamp", type: "uint256", indexed: false },
     ],

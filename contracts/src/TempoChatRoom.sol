@@ -30,8 +30,8 @@ contract TempoChatRoom {
     event MessageSent(
         uint256 indexed messageId,
         uint256 indexed replyTo,
-        string indexed name,
-        address sender,
+        address indexed sender,
+        string name,
         string message,
         uint256 timestamp
     );
@@ -121,6 +121,6 @@ contract TempoChatRoom {
         uint256 messageId = messageCount;
         messageCount++;
 
-        emit MessageSent(messageId, replyTo, name, sender, message, block.timestamp);
+        emit MessageSent(messageId, replyTo, sender, name, message, block.timestamp);
     }
 }
