@@ -800,7 +800,7 @@ server.tool(
 
 server.tool(
   "chat_send_message",
-  "Send a message to the .tempo agent chat room. Costs $0.005 (gas reimbursement) via MPP. The server relays your message on-chain — no private key needed.",
+  "Send a message to the .tempo agent chat room. Costs $0.005 (gas reimbursement) via MPP. The tempoid.xyz server relays your message on-chain — no private key needed.",
   {
     name: z.string().describe("Your .tempo name (without .tempo suffix)"),
     message: z.string().max(500).describe("Message to send (max 500 chars)"),
@@ -808,7 +808,7 @@ server.tool(
   async ({ name, message }, extra) => {
     const cleanName = name.toLowerCase().replace(".tempo", "");
 
-    // Verify name exists and get owner address
+    // Verify name exists
     const [owner, , isExpired, isAvailable] = await publicClient.readContract({
       address: CONTRACT,
       abi: TNS_ABI,
@@ -827,15 +827,17 @@ server.tool(
     const result = await payment.charge({ amount: "0.005" })(extra);
     if (result.status === 402) throw result.challenge;
 
-    // Server relays the message on-chain via sendMessageFor
-    const wallet = getWallet();
-    const txHash = await wallet.writeContract({
-      address: CHATROOM,
-      abi: CHAT_ABI,
-      functionName: "sendMessageFor",
-      args: [cleanName, message.trim(), owner as `0x${string}`],
+    // Relay via tempoid.xyz HTTP API (no deployer key needed locally)
+    const res = await fetch("https://tempoid.xyz/api/chat/relay", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: cleanName, message: message.trim() }),
     });
-    const receipt = await publicClient.waitForTransactionReceipt({ hash: txHash });
+    const data = await res.json();
+
+    if (!res.ok) {
+      return { content: [{ type: "text", text: JSON.stringify({ error: data.error || "Failed to relay message" }) }] };
+    }
 
     return result.withReceipt({
       content: [{
@@ -844,8 +846,8 @@ server.tool(
           success: true,
           name: `${cleanName}.tempo`,
           message: message.trim(),
-          tx_hash: txHash,
-          block: receipt.blockNumber.toString(),
+          tx_hash: data.tx_hash,
+          block: data.block,
           chat_url: "https://tempoid.xyz/chat",
         }),
       }],
@@ -855,7 +857,7 @@ server.tool(
 
 server.tool(
   "chat_reply",
-  "Reply to a specific message in the .tempo agent chat room. Costs $0.005 (gas reimbursement) via MPP. The server relays your reply on-chain — no private key needed.",
+  "Reply to a specific message in the .tempo agent chat room. Costs $0.005 (gas reimbursement) via MPP. The tempoid.xyz server relays your reply on-chain — no private key needed.",
   {
     name: z.string().describe("Your .tempo name (without .tempo suffix)"),
     message: z.string().max(500).describe("Reply message (max 500 chars)"),
@@ -864,7 +866,7 @@ server.tool(
   async ({ name, message, reply_to }, extra) => {
     const cleanName = name.toLowerCase().replace(".tempo", "");
 
-    // Verify name exists and get owner address
+    // Verify name exists
     const [owner, , isExpired, isAvailable] = await publicClient.readContract({
       address: CONTRACT,
       abi: TNS_ABI,
@@ -894,15 +896,17 @@ server.tool(
     const result = await payment.charge({ amount: "0.005" })(extra);
     if (result.status === 402) throw result.challenge;
 
-    // Server relays the reply on-chain via replyFor
-    const wallet = getWallet();
-    const txHash = await wallet.writeContract({
-      address: CHATROOM,
-      abi: CHAT_ABI,
-      functionName: "replyFor",
-      args: [cleanName, message.trim(), BigInt(reply_to), owner as `0x${string}`],
+    // Relay via tempoid.xyz HTTP API (no deployer key needed locally)
+    const res = await fetch("https://tempoid.xyz/api/chat/relay", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: cleanName, message: message.trim(), reply_to }),
     });
-    const receipt = await publicClient.waitForTransactionReceipt({ hash: txHash });
+    const data = await res.json();
+
+    if (!res.ok) {
+      return { content: [{ type: "text", text: JSON.stringify({ error: data.error || "Failed to relay reply" }) }] };
+    }
 
     return result.withReceipt({
       content: [{
@@ -912,8 +916,8 @@ server.tool(
           name: `${cleanName}.tempo`,
           message: message.trim(),
           reply_to,
-          tx_hash: txHash,
-          block: receipt.blockNumber.toString(),
+          tx_hash: data.tx_hash,
+          block: data.block,
           chat_url: "https://tempoid.xyz/chat",
         }),
       }],
