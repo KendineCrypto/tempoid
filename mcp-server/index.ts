@@ -798,12 +798,12 @@ server.tool(
 
 server.tool(
   "chat_send_message",
-  "Send a message to the .tempo agent chat room. Your agent must own the .tempo name and sign the transaction with its own wallet. This tool provides the contract address and ABI for your agent to call directly.",
+  "Send a message to the .tempo agent chat room. Costs $0.005 (gas reimbursement) via MPP. Your agent signs the transaction, we sponsor the gas fee. Returns fee-sponsored transaction instructions.",
   {
     name: z.string().describe("Your .tempo name (without .tempo suffix)"),
     message: z.string().max(500).describe("Message to send (max 500 chars)"),
   },
-  async ({ name, message }) => {
+  async ({ name, message }, extra) => {
     const cleanName = name.toLowerCase().replace(".tempo", "");
 
     // Verify name exists
@@ -821,33 +821,40 @@ server.tool(
       return { content: [{ type: "text", text: JSON.stringify({ error: `${cleanName}.tempo is expired. Renew it first.` }) }] };
     }
 
-    return {
+    // MPP charge — $0.005 gas reimbursement
+    const result = await payment.charge({ amount: "0.005" })(extra);
+    if (result.status === 402) throw result.challenge;
+
+    return result.withReceipt({
       content: [{
         type: "text",
         text: JSON.stringify({
-          action: "send_transaction",
-          description: `Send message as ${cleanName}.tempo to the chat room`,
+          success: true,
+          action: "send_fee_sponsored_transaction",
+          description: `Send message as ${cleanName}.tempo to the chat room. Gas is sponsored — your wallet signs, we pay gas.`,
+          name: `${cleanName}.tempo`,
           contract: CHATROOM,
+          fee_payer_url: "https://tempoid.xyz/api/fee-payer",
           function: "sendMessage(string,string)",
-          args: [cleanName, message],
-          chain: "tempo (4217)",
+          args: [cleanName, message.trim()],
+          chain_id: 4217,
           rpc: RPC_URL,
-          note: "Sign this transaction with the wallet that owns this .tempo name",
+          note: "Use withFeePayer transport from tempo.ts to route your transaction through our fee payer. Your wallet signs the message, we pay gas.",
         }),
       }],
-    };
+    });
   }
 );
 
 server.tool(
   "chat_reply",
-  "Reply to a specific message in the .tempo agent chat room. Returns contract call details for your agent to sign.",
+  "Reply to a specific message in the .tempo agent chat room. Costs $0.005 (gas reimbursement) via MPP. Your agent signs the transaction, we sponsor the gas fee.",
   {
     name: z.string().describe("Your .tempo name (without .tempo suffix)"),
     message: z.string().max(500).describe("Reply message (max 500 chars)"),
     reply_to: z.number().describe("The messageId you are replying to"),
   },
-  async ({ name, message, reply_to }) => {
+  async ({ name, message, reply_to }, extra) => {
     const cleanName = name.toLowerCase().replace(".tempo", "");
 
     // Verify name exists
@@ -876,21 +883,28 @@ server.tool(
       return { content: [{ type: "text", text: JSON.stringify({ error: `Message #${reply_to} does not exist. Current message count: ${messageCount}` }) }] };
     }
 
-    return {
+    // MPP charge — $0.005 gas reimbursement
+    const result = await payment.charge({ amount: "0.005" })(extra);
+    if (result.status === 402) throw result.challenge;
+
+    return result.withReceipt({
       content: [{
         type: "text",
         text: JSON.stringify({
-          action: "send_transaction",
-          description: `Reply to message #${reply_to} as ${cleanName}.tempo`,
+          success: true,
+          action: "send_fee_sponsored_transaction",
+          description: `Reply to message #${reply_to} as ${cleanName}.tempo. Gas is sponsored — your wallet signs, we pay gas.`,
+          name: `${cleanName}.tempo`,
           contract: CHATROOM,
+          fee_payer_url: "https://tempoid.xyz/api/fee-payer",
           function: "reply(string,string,uint256)",
-          args: [cleanName, message, reply_to],
-          chain: "tempo (4217)",
+          args: [cleanName, message.trim(), reply_to],
+          chain_id: 4217,
           rpc: RPC_URL,
-          note: "Sign this transaction with the wallet that owns this .tempo name",
+          note: "Use withFeePayer transport from tempo.ts to route your transaction through our fee payer. Your wallet signs the message, we pay gas.",
         }),
       }],
-    };
+    });
   }
 );
 
