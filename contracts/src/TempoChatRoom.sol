@@ -6,7 +6,7 @@ pragma solidity ^0.8.24;
  * @notice On-chain chat room for .tempo name holders.
  *         Only verified .tempo owners can send messages.
  *         Messages are stored as events (cheap, permanent, queryable).
- *         Supports reply threading via replyTo field.
+ *         Supports reply threading and relayer pattern for gasless agent messaging.
  */
 
 interface ITempoNameService {
@@ -22,7 +22,9 @@ interface ITempoNameService {
 contract TempoChatRoom {
     // --- State ---
     ITempoNameService public immutable nameService;
+    address public owner;
     uint256 public messageCount;
+    mapping(address => bool) public relayers;
 
     // --- Events ---
     event MessageSent(
@@ -33,6 +35,9 @@ contract TempoChatRoom {
         string message,
         uint256 timestamp
     );
+    event RelayerAdded(address relayer);
+    event RelayerRemoved(address relayer);
+    event OwnerTransferred(address newOwner);
 
     // --- Errors ---
     error NameNotRegistered(string name);
@@ -41,6 +46,8 @@ contract TempoChatRoom {
     error EmptyMessage();
     error MessageTooLong(uint256 length, uint256 maxLength);
     error InvalidReplyTarget(uint256 replyTo);
+    error NotOwner();
+    error NotRelayer();
 
     // --- Constants ---
     uint256 public constant MAX_MESSAGE_LENGTH = 500;
@@ -48,46 +55,72 @@ contract TempoChatRoom {
 
     constructor(address _nameService) {
         nameService = ITempoNameService(_nameService);
+        owner = msg.sender;
     }
 
-    /**
-     * @notice Send a new message to the chat room.
-     * @param name Your .tempo name (without .tempo suffix)
-     * @param message The message content (max 500 chars)
-     */
+    modifier onlyOwner() {
+        if (msg.sender != owner) revert NotOwner();
+        _;
+    }
+
+    // --- Admin ---
+
+    function addRelayer(address relayer) external onlyOwner {
+        relayers[relayer] = true;
+        emit RelayerAdded(relayer);
+    }
+
+    function removeRelayer(address relayer) external onlyOwner {
+        relayers[relayer] = false;
+        emit RelayerRemoved(relayer);
+    }
+
+    function transferOwnership(address newOwner) external onlyOwner {
+        owner = newOwner;
+        emit OwnerTransferred(newOwner);
+    }
+
+    // --- Direct messaging (caller = name owner) ---
+
     function sendMessage(string calldata name, string calldata message) external {
-        _send(name, message, NO_REPLY);
+        _send(name, message, NO_REPLY, msg.sender);
     }
 
-    /**
-     * @notice Reply to an existing message.
-     * @param name Your .tempo name (without .tempo suffix)
-     * @param message The reply content (max 500 chars)
-     * @param replyTo The messageId being replied to
-     */
     function reply(string calldata name, string calldata message, uint256 replyTo) external {
         if (replyTo >= messageCount) revert InvalidReplyTarget(replyTo);
-        _send(name, message, replyTo);
+        _send(name, message, replyTo, msg.sender);
     }
 
-    function _send(string calldata name, string calldata message, uint256 replyTo) internal {
-        // Validate message
+    // --- Relayer messaging (server sends on behalf of verified owner) ---
+
+    function sendMessageFor(string calldata name, string calldata message, address sender) external {
+        if (!relayers[msg.sender]) revert NotRelayer();
+        _send(name, message, NO_REPLY, sender);
+    }
+
+    function replyFor(string calldata name, string calldata message, uint256 replyTo, address sender) external {
+        if (!relayers[msg.sender]) revert NotRelayer();
+        if (replyTo >= messageCount) revert InvalidReplyTarget(replyTo);
+        _send(name, message, replyTo, sender);
+    }
+
+    // --- Internal ---
+
+    function _send(string calldata name, string calldata message, uint256 replyTo, address sender) internal {
         if (bytes(message).length == 0) revert EmptyMessage();
         if (bytes(message).length > MAX_MESSAGE_LENGTH) {
             revert MessageTooLong(bytes(message).length, MAX_MESSAGE_LENGTH);
         }
 
-        // Verify .tempo name ownership via TempoNameService contract
-        (address owner, , bool isExpired, bool isAvailable) = nameService.getNameInfo(name);
+        (address nameOwner, , bool isExpired, bool isAvailable) = nameService.getNameInfo(name);
 
-        if (isAvailable || owner == address(0)) revert NameNotRegistered(name);
+        if (isAvailable || nameOwner == address(0)) revert NameNotRegistered(name);
         if (isExpired) revert NameExpired(name);
-        if (owner != msg.sender) revert NotNameOwner(name, msg.sender);
+        if (nameOwner != sender) revert NotNameOwner(name, sender);
 
-        // Emit message event
         uint256 messageId = messageCount;
         messageCount++;
 
-        emit MessageSent(messageId, replyTo, name, msg.sender, message, block.timestamp);
+        emit MessageSent(messageId, replyTo, name, sender, message, block.timestamp);
     }
 }

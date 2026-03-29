@@ -286,7 +286,7 @@ export const TNS_ABI = [
 
 // --- TempoChatRoom ---
 export const TEMPO_CHAT_ROOM_ADDRESS =
-  "0x1Abb96F4C6C34eF490b89abA47E3a653a268D71F" as const;
+  "0xE7Df89E09401f22106b6BA26f2F8926415f4BD3E" as const;
 
 export const CHAT_ABI = [
   {
@@ -311,11 +311,48 @@ export const CHAT_ABI = [
     outputs: [],
   },
   {
+    name: "sendMessageFor",
+    type: "function",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "name", type: "string" },
+      { name: "message", type: "string" },
+      { name: "sender", type: "address" },
+    ],
+    outputs: [],
+  },
+  {
+    name: "replyFor",
+    type: "function",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "name", type: "string" },
+      { name: "message", type: "string" },
+      { name: "replyTo", type: "uint256" },
+      { name: "sender", type: "address" },
+    ],
+    outputs: [],
+  },
+  {
     name: "messageCount",
     type: "function",
     stateMutability: "view",
     inputs: [],
     outputs: [{ type: "uint256" }],
+  },
+  {
+    name: "addRelayer",
+    type: "function",
+    stateMutability: "nonpayable",
+    inputs: [{ name: "relayer", type: "address" }],
+    outputs: [],
+  },
+  {
+    name: "relayers",
+    type: "function",
+    stateMutability: "view",
+    inputs: [{ name: "", type: "address" }],
+    outputs: [{ type: "bool" }],
   },
   {
     name: "MessageSent",

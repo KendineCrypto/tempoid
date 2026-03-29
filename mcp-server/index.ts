@@ -697,27 +697,29 @@ server.tool(
 // CHAT TOOLS (TempoChatRoom)
 // ==========================================
 
-const CHATROOM = "0x1Abb96F4C6C34eF490b89abA47E3a653a268D71F" as const;
+const CHATROOM = "0xE7Df89E09401f22106b6BA26f2F8926415f4BD3E" as const;
 
 const CHAT_ABI = [
   {
-    name: "sendMessage",
+    name: "sendMessageFor",
     type: "function",
     stateMutability: "nonpayable",
     inputs: [
       { name: "name", type: "string" },
       { name: "message", type: "string" },
+      { name: "sender", type: "address" },
     ],
     outputs: [],
   },
   {
-    name: "reply",
+    name: "replyFor",
     type: "function",
     stateMutability: "nonpayable",
     inputs: [
       { name: "name", type: "string" },
       { name: "message", type: "string" },
       { name: "replyTo", type: "uint256" },
+      { name: "sender", type: "address" },
     ],
     outputs: [],
   },
@@ -798,7 +800,7 @@ server.tool(
 
 server.tool(
   "chat_send_message",
-  "Send a message to the .tempo agent chat room. Costs $0.005 (gas reimbursement) via MPP. Your agent signs the transaction, we sponsor the gas fee. Returns fee-sponsored transaction instructions.",
+  "Send a message to the .tempo agent chat room. Costs $0.005 (gas reimbursement) via MPP. The server relays your message on-chain — no private key needed.",
   {
     name: z.string().describe("Your .tempo name (without .tempo suffix)"),
     message: z.string().max(500).describe("Message to send (max 500 chars)"),
@@ -806,7 +808,7 @@ server.tool(
   async ({ name, message }, extra) => {
     const cleanName = name.toLowerCase().replace(".tempo", "");
 
-    // Verify name exists
+    // Verify name exists and get owner address
     const [owner, , isExpired, isAvailable] = await publicClient.readContract({
       address: CONTRACT,
       abi: TNS_ABI,
@@ -825,21 +827,26 @@ server.tool(
     const result = await payment.charge({ amount: "0.005" })(extra);
     if (result.status === 402) throw result.challenge;
 
+    // Server relays the message on-chain via sendMessageFor
+    const wallet = getWallet();
+    const txHash = await wallet.writeContract({
+      address: CHATROOM,
+      abi: CHAT_ABI,
+      functionName: "sendMessageFor",
+      args: [cleanName, message.trim(), owner as `0x${string}`],
+    });
+    const receipt = await publicClient.waitForTransactionReceipt({ hash: txHash });
+
     return result.withReceipt({
       content: [{
         type: "text",
         text: JSON.stringify({
           success: true,
-          action: "send_fee_sponsored_transaction",
-          description: `Send message as ${cleanName}.tempo to the chat room. Gas is sponsored — your wallet signs, we pay gas.`,
           name: `${cleanName}.tempo`,
-          contract: CHATROOM,
-          fee_payer_url: "https://tempoid.xyz/api/fee-payer",
-          function: "sendMessage(string,string)",
-          args: [cleanName, message.trim()],
-          chain_id: 4217,
-          rpc: RPC_URL,
-          note: "Use withFeePayer transport from tempo.ts to route your transaction through our fee payer. Your wallet signs the message, we pay gas.",
+          message: message.trim(),
+          tx_hash: txHash,
+          block: receipt.blockNumber.toString(),
+          chat_url: "https://tempoid.xyz/chat",
         }),
       }],
     });
@@ -848,7 +855,7 @@ server.tool(
 
 server.tool(
   "chat_reply",
-  "Reply to a specific message in the .tempo agent chat room. Costs $0.005 (gas reimbursement) via MPP. Your agent signs the transaction, we sponsor the gas fee.",
+  "Reply to a specific message in the .tempo agent chat room. Costs $0.005 (gas reimbursement) via MPP. The server relays your reply on-chain — no private key needed.",
   {
     name: z.string().describe("Your .tempo name (without .tempo suffix)"),
     message: z.string().max(500).describe("Reply message (max 500 chars)"),
@@ -857,7 +864,7 @@ server.tool(
   async ({ name, message, reply_to }, extra) => {
     const cleanName = name.toLowerCase().replace(".tempo", "");
 
-    // Verify name exists
+    // Verify name exists and get owner address
     const [owner, , isExpired, isAvailable] = await publicClient.readContract({
       address: CONTRACT,
       abi: TNS_ABI,
@@ -873,35 +880,41 @@ server.tool(
     }
 
     // Verify reply target exists
-    const messageCount = await publicClient.readContract({
+    const msgCount = await publicClient.readContract({
       address: CHATROOM,
       abi: CHAT_ABI,
       functionName: "messageCount",
     }) as bigint;
 
-    if (BigInt(reply_to) >= messageCount) {
-      return { content: [{ type: "text", text: JSON.stringify({ error: `Message #${reply_to} does not exist. Current message count: ${messageCount}` }) }] };
+    if (BigInt(reply_to) >= msgCount) {
+      return { content: [{ type: "text", text: JSON.stringify({ error: `Message #${reply_to} does not exist. Current message count: ${msgCount}` }) }] };
     }
 
     // MPP charge — $0.005 gas reimbursement
     const result = await payment.charge({ amount: "0.005" })(extra);
     if (result.status === 402) throw result.challenge;
 
+    // Server relays the reply on-chain via replyFor
+    const wallet = getWallet();
+    const txHash = await wallet.writeContract({
+      address: CHATROOM,
+      abi: CHAT_ABI,
+      functionName: "replyFor",
+      args: [cleanName, message.trim(), BigInt(reply_to), owner as `0x${string}`],
+    });
+    const receipt = await publicClient.waitForTransactionReceipt({ hash: txHash });
+
     return result.withReceipt({
       content: [{
         type: "text",
         text: JSON.stringify({
           success: true,
-          action: "send_fee_sponsored_transaction",
-          description: `Reply to message #${reply_to} as ${cleanName}.tempo. Gas is sponsored — your wallet signs, we pay gas.`,
           name: `${cleanName}.tempo`,
-          contract: CHATROOM,
-          fee_payer_url: "https://tempoid.xyz/api/fee-payer",
-          function: "reply(string,string,uint256)",
-          args: [cleanName, message.trim(), reply_to],
-          chain_id: 4217,
-          rpc: RPC_URL,
-          note: "Use withFeePayer transport from tempo.ts to route your transaction through our fee payer. Your wallet signs the message, we pay gas.",
+          message: message.trim(),
+          reply_to,
+          tx_hash: txHash,
+          block: receipt.blockNumber.toString(),
+          chat_url: "https://tempoid.xyz/chat",
         }),
       }],
     });

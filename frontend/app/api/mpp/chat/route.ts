@@ -3,8 +3,9 @@ import {
   publicClient,
   CONTRACT_ADDRESS,
   CONTRACT_ABI,
+  getWalletClient,
 } from "@/lib/tempo-client";
-import { TEMPO_CHAT_ROOM_ADDRESS } from "@/lib/contract";
+import { TEMPO_CHAT_ROOM_ADDRESS, CHAT_ABI } from "@/lib/contract";
 
 // Lazy init MPP
 let _mppx: any = null;
@@ -53,9 +54,10 @@ export async function POST(request: Request) {
     );
   }
 
-  // --- Verify .tempo name exists and is not expired ---
+  // --- Verify .tempo name exists and get owner ---
+  let owner: string;
   try {
-    const [owner, , isExpired, isAvailable] = (await publicClient.readContract({
+    const [nameOwner, , isExpired, isAvailable] = (await publicClient.readContract({
       address: CONTRACT_ADDRESS,
       abi: CONTRACT_ABI,
       functionName: "getNameInfo",
@@ -64,8 +66,8 @@ export async function POST(request: Request) {
 
     if (
       isAvailable ||
-      !owner ||
-      owner === "0x0000000000000000000000000000000000000000"
+      !nameOwner ||
+      nameOwner === "0x0000000000000000000000000000000000000000"
     ) {
       return Response.json(
         {
@@ -85,6 +87,8 @@ export async function POST(request: Request) {
         { status: 403 }
       );
     }
+
+    owner = nameOwner;
   } catch {
     return Response.json(
       { error: `Could not resolve ${cleanName}.tempo` },
@@ -99,51 +103,43 @@ export async function POST(request: Request) {
 
   if (response.status === 402) return response.challenge;
 
-  // --- Payment verified ---
-  // Return fee-payer endpoint info so the agent can send a
-  // fee-sponsored transaction directly to the contract
-  return response.withReceipt(
-    Response.json({
-      success: true,
-      action: "send_fee_sponsored_transaction",
-      name: `${cleanName}.tempo`,
-      contract: TEMPO_CHAT_ROOM_ADDRESS,
-      fee_payer_url: "https://tempoid.xyz/api/fee-payer",
-      instructions: {
-        description:
-          "Send a fee-sponsored transaction to the TempoChatRoom contract. " +
-          "Use withFeePayer transport from tempo.ts to route your transaction " +
-          "through our fee payer service. Your wallet signs the message, we pay gas.",
-        function: reply_to !== undefined
-          ? "reply(string,string,uint256)"
-          : "sendMessage(string,string)",
-        args: reply_to !== undefined
-          ? [cleanName, message.trim(), reply_to]
-          : [cleanName, message.trim()],
-        chain_id: 4217,
-        rpc: "https://rpc.presto.tempo.xyz",
-        example: `
-import { createClient, http } from 'viem'
-import { tempo } from 'viem/chains'
-import { withFeePayer } from 'tempo.ts'
-import { tempoActions } from 'tempo.ts'
+  // --- Payment verified — relay message on-chain ---
+  try {
+    const isReply = reply_to !== undefined && reply_to !== null;
 
-const client = createClient({
-  chain: tempo,
-  transport: withFeePayer(
-    http(),
-    http('https://tempoid.xyz/api/fee-payer')
-  ),
-}).extend(tempoActions())
+    const wallet = getWalletClient() as any;
 
-await client.writeContract({
-  address: '${TEMPO_CHAT_ROOM_ADDRESS}',
-  abi: chatAbi,
-  functionName: '${reply_to !== undefined ? "reply" : "sendMessage"}',
-  args: ${JSON.stringify(reply_to !== undefined ? [cleanName, message.trim(), reply_to] : [cleanName, message.trim()])},
-  feePayer: true,
-})`,
-      },
-    })
-  );
+    const txHash = isReply
+      ? await wallet.writeContract({
+          address: TEMPO_CHAT_ROOM_ADDRESS,
+          abi: CHAT_ABI,
+          functionName: "replyFor",
+          args: [cleanName, message.trim(), BigInt(reply_to), owner as `0x${string}`],
+        })
+      : await wallet.writeContract({
+          address: TEMPO_CHAT_ROOM_ADDRESS,
+          abi: CHAT_ABI,
+          functionName: "sendMessageFor",
+          args: [cleanName, message.trim(), owner as `0x${string}`],
+        });
+
+    const receipt = await publicClient.waitForTransactionReceipt({ hash: txHash });
+
+    return response.withReceipt(
+      Response.json({
+        success: true,
+        name: `${cleanName}.tempo`,
+        message: message.trim(),
+        reply_to: isReply ? reply_to : null,
+        tx_hash: txHash,
+        block: receipt.blockNumber.toString(),
+        chat_url: "https://tempoid.xyz/chat",
+      })
+    );
+  } catch (e: any) {
+    return Response.json(
+      { error: "Failed to relay message", detail: e.message?.slice(0, 200) },
+      { status: 500 }
+    );
+  }
 }
