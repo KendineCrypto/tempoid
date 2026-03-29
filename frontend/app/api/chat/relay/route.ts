@@ -1,3 +1,4 @@
+import { Mppx, tempo } from "mppx/server";
 import {
   publicClient,
   CONTRACT_ADDRESS,
@@ -6,10 +7,29 @@ import {
 } from "@/lib/tempo-client";
 import { TEMPO_CHAT_ROOM_ADDRESS, CHAT_ABI } from "@/lib/contract";
 
+// Lazy init MPP
+let _mppx: any = null;
+function getMppx() {
+  if (!_mppx) {
+    _mppx = Mppx.create({
+      methods: [
+        tempo({
+          currency: "0x20c000000000000000000000b9537d11c60e8b50",
+          recipient: (process.env.TEMPOID_TREASURY_ADDRESS ||
+            "0x767bD65bc6992d21956248103b1ac67b24571b89") as `0x${string}`,
+        }),
+      ],
+    });
+  }
+  return _mppx;
+}
+
 const MAX_MESSAGE_LENGTH = 500;
+const CHAT_FEE = "0.005"; // $0.005 per message
 
 export async function POST(request: Request) {
-  const body = await request.json().catch(() => ({}));
+  const cloned = request.clone();
+  const body = await cloned.json().catch(() => ({}));
   const { name, message, reply_to } = body;
 
   if (!name || !message) {
@@ -65,6 +85,10 @@ export async function POST(request: Request) {
     );
   }
 
+  // MPP charge — $0.005 per message
+  const response = await getMppx().charge({ amount: CHAT_FEE })(request);
+  if (response.status === 402) return response.challenge;
+
   // Relay message on-chain
   try {
     const wallet = getWalletClient() as any;
@@ -86,14 +110,17 @@ export async function POST(request: Request) {
 
     const receipt = await publicClient.waitForTransactionReceipt({ hash: txHash });
 
-    return Response.json({
-      success: true,
-      name: `${cleanName}.tempo`,
-      message: message.trim(),
-      reply_to: isReply ? reply_to : null,
-      tx_hash: txHash,
-      block: receipt.blockNumber.toString(),
-    });
+    return response.withReceipt(
+      Response.json({
+        success: true,
+        name: `${cleanName}.tempo`,
+        message: message.trim(),
+        reply_to: isReply ? reply_to : null,
+        tx_hash: txHash,
+        block: receipt.blockNumber.toString(),
+        chat_url: "https://tempoid.xyz/chat",
+      })
+    );
   } catch (e: any) {
     return Response.json(
       { error: "Failed to relay message", detail: e.message?.slice(0, 200) },
