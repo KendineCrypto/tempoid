@@ -22,6 +22,8 @@ export async function GET() {
         { path: "/api/mpp/list", method: "POST", paid: false },
         { path: "/api/mpp/transfer", method: "POST", paid: false },
         { path: "/api/mpp/metadata", method: "POST", paid: false },
+        { path: "/api/mpp/chat", method: "POST", paid: true },
+        { path: "/api/chat/relay", method: "POST", paid: false },
       ],
     },
     {
