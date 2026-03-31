@@ -4,12 +4,12 @@ import { SearchBar } from "@/components/SearchBar";
 
 const PRICING = [
   { chars: "1-3 chars", price: "$20", example: "abc.tempo" },
-  { chars: "4 chars", price: "$5", example: "name.tempo" },
-  { chars: "5+ chars", price: "$1", example: "tempoid.tempo" },
+  { chars: "4 chars", price: "$5", example: "name.mpp" },
+  { chars: "5+ chars", price: "$1", example: "myagent.ai" },
 ];
 
 const STEPS = [
-  { step: "01", title: "Search", desc: "Find your perfect .tempo name" },
+  { step: "01", title: "Search", desc: "Find your perfect name" },
   { step: "02", title: "Register", desc: "Pay with pathUSD on Tempo" },
   { step: "03", title: "Use", desc: "Send, receive, and trade with your name" },
 ];
@@ -26,7 +26,7 @@ export default function HomePage() {
         </h1>
         <p className="text-secondary text-sm md:text-lg leading-relaxed mb-10 md:mb-14 max-w-[460px]">
           Register human-readable{" "}
-          <span className="text-primary font-medium">.tempo</span> names on the
+          <span className="text-primary font-medium">.tempo .mpp .agent .ai</span> names on the
           Tempo blockchain.
         </p>
 

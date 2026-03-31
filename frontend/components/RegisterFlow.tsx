@@ -5,18 +5,27 @@ import { useAccount, useSwitchChain } from "wagmi";
 import { getYearlyFeeDisplay, getOriginalFeeDisplay, LAUNCH_DAY_DISCOUNT } from "@/lib/utils";
 import { tempo } from "@/lib/wagmi";
 import { useRegister } from "@/hooks/useRegister";
+import { TLD, isV2, V2_PAYMENT_TOKENS, PATHUSD_ADDRESS } from "@/lib/contract";
 
 interface RegisterFlowProps {
   name: string;
+  tld?: TLD;
 }
 
-export function RegisterFlow({ name }: RegisterFlowProps) {
+export function RegisterFlow({ name, tld = "tempo" }: RegisterFlowProps) {
   const [years, setYears] = useState(1);
+  const [selectedToken, setSelectedToken] = useState<`0x${string}`>(
+    PATHUSD_ADDRESS as `0x${string}`
+  );
   const { isConnected, chainId } = useAccount();
   const { switchChain } = useSwitchChain();
   const yearlyFee = getYearlyFeeDisplay(name);
   const totalFee = yearlyFee * years;
   const wrongChain = chainId !== tempo.id;
+
+  const tokenName = V2_PAYMENT_TOKENS.find(
+    (t) => t.address.toLowerCase() === selectedToken.toLowerCase()
+  )?.name ?? "pathUSD";
 
   const {
     approve,
@@ -26,7 +35,7 @@ export function RegisterFlow({ name }: RegisterFlowProps) {
     isApproved,
     isRegistered,
     error,
-  } = useRegister(name, years);
+  } = useRegister(name, years, tld, selectedToken);
 
   if (!isConnected) {
     return (
@@ -60,6 +69,30 @@ export function RegisterFlow({ name }: RegisterFlowProps) {
         </div>
       </div>
 
+      {/* Token selector (V2 only) */}
+      {isV2(tld) && (
+        <div>
+          <p className="text-xs text-tertiary mb-3 uppercase tracking-wider">
+            Payment Token
+          </p>
+          <div className="grid grid-cols-3 gap-[1px] bg-border">
+            {V2_PAYMENT_TOKENS.map((token) => (
+              <button
+                key={token.address}
+                onClick={() => setSelectedToken(token.address as `0x${string}`)}
+                className={`py-3 text-sm transition-colors ${
+                  selectedToken.toLowerCase() === token.address.toLowerCase()
+                    ? "bg-primary text-white"
+                    : "bg-white text-secondary hover:bg-bg"
+                }`}
+              >
+                {token.name}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Price */}
       <div className="border-t border-border pt-6">
         {LAUNCH_DAY_DISCOUNT && (
@@ -75,7 +108,7 @@ export function RegisterFlow({ name }: RegisterFlowProps) {
             {LAUNCH_DAY_DISCOUNT && (
               <span className="line-through text-muted">${getOriginalFeeDisplay(name)}</span>
             )}
-            <span>${yearlyFee} pathUSD</span>
+            <span>${yearlyFee} {tokenName}</span>
           </span>
         </div>
         <div className="flex justify-between text-sm text-tertiary mt-2">
@@ -89,7 +122,7 @@ export function RegisterFlow({ name }: RegisterFlowProps) {
               <span className="text-sm line-through text-muted">${getOriginalFeeDisplay(name) * years}</span>
             )}
             <span className="text-lg font-serif text-primary">
-              ${totalFee} pathUSD
+              ${totalFee} {tokenName}
             </span>
           </span>
         </div>
@@ -121,10 +154,10 @@ export function RegisterFlow({ name }: RegisterFlowProps) {
             {isApproved ? "✓" : "1"}
           </span>
           {isApproving
-            ? "Approving pathUSD..."
+            ? `Approving ${tokenName}...`
             : isApproved
-              ? "pathUSD Approved"
-              : "Approve pathUSD"}
+              ? `${tokenName} Approved`
+              : `Approve ${tokenName}`}
         </button>
 
         {/* Register */}
@@ -153,10 +186,10 @@ export function RegisterFlow({ name }: RegisterFlowProps) {
       {/* Success */}
       {isRegistered && (
         <div className="border-t border-border pt-6 text-center">
-          <p className="font-serif text-2xl text-primary">{name}.tempo</p>
+          <p className="font-serif text-2xl text-primary">{name}.{tld}</p>
           <p className="text-sm text-tertiary mt-2">is now yours</p>
           <a
-            href={`/name/${name}`}
+            href={`/name/${name}?tld=${tld}`}
             className="inline-block mt-4 px-6 py-2 bg-primary text-white text-sm
                        hover:opacity-80 transition-opacity"
           >

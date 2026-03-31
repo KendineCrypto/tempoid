@@ -152,7 +152,7 @@ export default function SendPage() {
         Send
       </h1>
       <p className="text-sm text-tertiary mb-12">
-        Send pathUSD to any .tempo name
+        Send pathUSD to any .tempo .mpp .agent .ai name
       </p>
 
       {/* Recipient */}
@@ -170,7 +170,7 @@ export default function SendPage() {
                        placeholder:text-muted focus:outline-none"
           />
           <span className="absolute right-0 top-1/2 -translate-y-1/2 text-tertiary text-sm">
-            .tempo
+            .tempo / .mpp / .agent / .ai
           </span>
         </div>
 
@@ -228,10 +228,10 @@ export default function SendPage() {
         }`}
       >
         {!resolvedAddress
-          ? "Enter a valid .tempo name"
+          ? "Enter a valid name"
           : !amount || Number(amount) <= 0
             ? "Enter amount"
-            : `Send $${amount} to ${cleanName}.tempo →`}
+            : `Send $${amount} to ${cleanName} →`}
       </button>
     </div>
   );

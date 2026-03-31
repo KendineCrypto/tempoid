@@ -1,6 +1,6 @@
 "use client";
 
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import { useAccount } from "wagmi";
 import { useState } from "react";
 import Link from "next/link";
@@ -8,18 +8,22 @@ import { shortenAddress, formatExpiry, getYearlyFeeDisplay, formatPathUSD } from
 import { useNameInfo, useNameMetadata } from "@/hooks/useNameService";
 import { useRenew, useTransfer, useSetPrimaryName } from "@/hooks/useRegister";
 import { useListForSale, useCancelListing, useListing } from "@/hooks/useMarketplace";
+import { TLD, TLDS } from "@/lib/contract";
 
 export default function NameProfilePage() {
   const params = useParams();
+  const searchParams = useSearchParams();
   const name = (params.name as string).toLowerCase();
+  const tldParam = searchParams.get("tld") as TLD | null;
+  const tld: TLD = tldParam && TLDS.includes(tldParam) ? tldParam : "tempo";
   const { address } = useAccount();
-  const { owner, expiry, isExpired, isAvailable, isLoading } = useNameInfo(name);
+  const { owner, expiry, isExpired, isAvailable, isLoading } = useNameInfo(name, tld);
   const { metadata } = useNameMetadata(name, [
     "avatar",
     "twitter",
     "website",
     "bio",
-  ]);
+  ], tld);
 
   const isOwner =
     address && owner && address.toLowerCase() === owner.toLowerCase();
@@ -29,12 +33,12 @@ export default function NameProfilePage() {
   const [showList, setShowList] = useState(false);
   const [listPrice, setListPrice] = useState("");
 
-  const { renew, isPending: isRenewing } = useRenew(name);
-  const { transfer, isPending: isTransferring } = useTransfer(name);
-  const { list, isPending: isListing, isSuccess: isListed } = useListForSale(name);
-  const { cancel, isPending: isCancelling } = useCancelListing(name);
-  const { active: isListedOnMarket, price: listingPrice } = useListing(name);
-  const { setPrimary, isPending: isSettingPrimary } = useSetPrimaryName();
+  const { renew, isPending: isRenewing } = useRenew(name, tld);
+  const { transfer, isPending: isTransferring } = useTransfer(name, tld);
+  const { list, isPending: isListing, isSuccess: isListed } = useListForSale(name, tld);
+  const { cancel, isPending: isCancelling } = useCancelListing(name, tld);
+  const { active: isListedOnMarket, price: listingPrice } = useListing(name, tld);
+  const { setPrimary, isPending: isSettingPrimary } = useSetPrimaryName(tld);
 
   if (isLoading) {
     return (
@@ -48,11 +52,11 @@ export default function NameProfilePage() {
     return (
       <div className="max-w-[480px] mx-auto py-12 md:py-20 text-center">
         <h1 className="font-serif text-[32px] md:text-[48px] leading-[1] tracking-tight text-primary">
-          {name}<span className="text-muted">.tempo</span>
+          {name}<span className="text-muted">.{tld}</span>
         </h1>
         <p className="text-sm text-tertiary mt-4 mb-8">This name is available</p>
         <Link
-          href={`/register/${name}`}
+          href={`/register/${name}?tld=${tld}`}
           className="inline-block px-6 py-3 bg-primary text-white text-sm
                      hover:opacity-80 transition-opacity"
         >
@@ -74,7 +78,7 @@ export default function NameProfilePage() {
       {/* Header */}
       <div className="mt-8 mb-12">
         <h1 className="font-serif text-[36px] md:text-[56px] leading-[1] tracking-tight text-primary">
-          {name}<span className="text-muted">.tempo</span>
+          {name}<span className="text-muted">.{tld}</span>
         </h1>
         {metadata.bio && (
           <p className="text-secondary mt-4 text-base">{metadata.bio}</p>
@@ -265,7 +269,7 @@ export default function NameProfilePage() {
           {isListed && (
             <div className="mt-4 p-4 bg-green-50 border border-green-200">
               <p className="text-sm text-green-800">
-                ✓ Successfully listed on marketplace for ${listPrice} pathUSD
+                Successfully listed on marketplace for ${listPrice} pathUSD
               </p>
               <Link
                 href="/marketplace"

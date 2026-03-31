@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback } from "react";
 import {
   useReadContract,
   useReadContracts,
@@ -10,16 +10,23 @@ import {
 import { parseUnits } from "viem";
 import {
   TNS_ABI,
+  TNS_V2_ABI,
   PATHUSD_ABI,
-  TEMPO_NAME_SERVICE_ADDRESS,
   PATHUSD_ADDRESS,
+  TLD,
+  getContractAddress,
+  isV2,
 } from "@/lib/contract";
 import { tempo } from "@/lib/wagmi";
 
-export function useListingCount() {
+function getAbi(tld: TLD) {
+  return isV2(tld) ? TNS_V2_ABI : TNS_ABI;
+}
+
+export function useListingCount(tld: TLD = "tempo") {
   const { data, isLoading } = useReadContract({
-    address: TEMPO_NAME_SERVICE_ADDRESS,
-    abi: TNS_ABI,
+    address: getContractAddress(tld),
+    abi: getAbi(tld),
     functionName: "getListingCount",
     chainId: tempo.id,
   });
@@ -30,10 +37,13 @@ export function useListingCount() {
   };
 }
 
-export function useListedNames(count: number) {
+export function useListedNames(count: number, tld: TLD = "tempo") {
+  const address = getContractAddress(tld);
+  const abi = getAbi(tld);
+
   const contracts = Array.from({ length: count }, (_, i) => ({
-    address: TEMPO_NAME_SERVICE_ADDRESS,
-    abi: TNS_ABI,
+    address,
+    abi,
     functionName: "getListedNameByIndex" as const,
     args: [BigInt(i)] as const,
     chainId: tempo.id,
@@ -51,58 +61,80 @@ export function useListedNames(count: number) {
   return { names, isLoading };
 }
 
-export function useListing(name: string) {
+export function useListing(name: string, tld: TLD = "tempo") {
   const { data, isLoading, refetch } = useReadContract({
-    address: TEMPO_NAME_SERVICE_ADDRESS,
-    abi: TNS_ABI,
+    address: getContractAddress(tld),
+    abi: getAbi(tld),
     functionName: "getListing",
     args: [name],
     chainId: tempo.id,
     query: { enabled: name.length >= 3 },
   });
 
-  const result = data as [string, bigint, boolean] | undefined;
+  // V1 returns [seller, price, active], V2 returns [seller, price, priceToken, active]
+  if (isV2(tld)) {
+    const result = data as [string, bigint, string, boolean] | undefined;
+    return {
+      seller: result?.[0],
+      price: result?.[1],
+      priceToken: result?.[2],
+      active: result?.[3] ?? false,
+      isLoading,
+      refetch,
+    };
+  }
 
+  const result = data as [string, bigint, boolean] | undefined;
   return {
     seller: result?.[0],
     price: result?.[1],
+    priceToken: undefined,
     active: result?.[2] ?? false,
     isLoading,
     refetch,
   };
 }
 
-export function useListForSale(name: string) {
+export function useListForSale(name: string, tld: TLD = "tempo") {
   const [error, setError] = useState<string | null>(null);
+  const contractAddress = getContractAddress(tld);
+  const abi = getAbi(tld);
 
   const { writeContract, data: txHash, isPending } = useWriteContract();
   const { isSuccess } = useWaitForTransactionReceipt({ hash: txHash });
 
   const list = useCallback(
-    (priceUsd: string) => {
+    (priceUsd: string, token?: `0x${string}`) => {
       setError(null);
       const priceWei = parseUnits(priceUsd, 6);
+
+      const args = isV2(tld) && token
+        ? [name, priceWei, token]
+        : [name, priceWei];
+
       writeContract(
         {
-          address: TEMPO_NAME_SERVICE_ADDRESS,
-          abi: TNS_ABI,
+          address: contractAddress,
+          abi,
           functionName: "listForSale",
-          args: [name, priceWei],
+          args,
           chainId: tempo.id,
-        },
+        } as any,
         {
           onError: (err) => setError(err.message),
         }
       );
     },
-    [writeContract, name]
+    [writeContract, name, tld, contractAddress, abi]
   );
 
   return { list, isPending, isSuccess, error };
 }
 
-export function useCancelListing(name: string) {
+export function useCancelListing(name: string, tld: TLD = "tempo") {
   const [error, setError] = useState<string | null>(null);
+  const contractAddress = getContractAddress(tld);
+  const abi = getAbi(tld);
 
   const { writeContract, data: txHash, isPending } = useWriteContract();
   const { isSuccess } = useWaitForTransactionReceipt({ hash: txHash });
@@ -111,8 +143,8 @@ export function useCancelListing(name: string) {
     setError(null);
     writeContract(
       {
-        address: TEMPO_NAME_SERVICE_ADDRESS,
-        abi: TNS_ABI,
+        address: contractAddress,
+        abi,
         functionName: "cancelListing",
         args: [name],
         chainId: tempo.id,
@@ -121,14 +153,16 @@ export function useCancelListing(name: string) {
         onError: (err) => setError(err.message),
       }
     );
-  }, [writeContract, name]);
+  }, [writeContract, name, contractAddress, abi]);
 
   return { cancel, isPending, isSuccess, error };
 }
 
-export function useBuyName(name: string) {
+export function useBuyName(name: string, tld: TLD = "tempo") {
   const [error, setError] = useState<string | null>(null);
   const [step, setStep] = useState<"idle" | "approve" | "buy">("idle");
+  const contractAddress = getContractAddress(tld);
+  const abi = getAbi(tld);
 
   const {
     writeContract: writeApprove,
@@ -151,15 +185,16 @@ export function useBuyName(name: string) {
   });
 
   const approve = useCallback(
-    (price: bigint) => {
+    (price: bigint, token?: `0x${string}`) => {
       setError(null);
       setStep("approve");
+      const tokenAddr = token || PATHUSD_ADDRESS;
       writeApprove(
         {
-          address: PATHUSD_ADDRESS,
+          address: tokenAddr as `0x${string}`,
           abi: PATHUSD_ABI,
           functionName: "approve",
-          args: [TEMPO_NAME_SERVICE_ADDRESS, price],
+          args: [contractAddress, price],
           chainId: tempo.id,
         },
         {
@@ -170,7 +205,7 @@ export function useBuyName(name: string) {
         }
       );
     },
-    [writeApprove]
+    [writeApprove, contractAddress]
   );
 
   const buy = useCallback(() => {
@@ -178,8 +213,8 @@ export function useBuyName(name: string) {
     setStep("buy");
     writeBuy(
       {
-        address: TEMPO_NAME_SERVICE_ADDRESS,
-        abi: TNS_ABI,
+        address: contractAddress,
+        abi,
         functionName: "buyName",
         args: [name],
         chainId: tempo.id,
@@ -191,7 +226,7 @@ export function useBuyName(name: string) {
         },
       }
     );
-  }, [writeBuy, name]);
+  }, [writeBuy, name, contractAddress, abi]);
 
   return {
     approve,

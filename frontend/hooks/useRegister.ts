@@ -5,17 +5,29 @@ import { useAccount, useWriteContract, useWaitForTransactionReceipt } from "wagm
 import { parseUnits } from "viem";
 import {
   TNS_ABI,
+  TNS_V2_ABI,
   PATHUSD_ABI,
-  TEMPO_NAME_SERVICE_ADDRESS,
   PATHUSD_ADDRESS,
+  TLD,
+  getContractAddress,
+  isV2,
 } from "@/lib/contract";
 import { getYearlyFeeDisplay } from "@/lib/utils";
 import { tempo } from "@/lib/wagmi";
 
-export function useRegister(name: string, years: number) {
+function getAbi(tld: TLD) {
+  return isV2(tld) ? TNS_V2_ABI : TNS_ABI;
+}
+
+export function useRegister(name: string, years: number, tld: TLD = "tempo", paymentToken?: `0x${string}`) {
   const { address } = useAccount();
   const [step, setStep] = useState<"idle" | "approve" | "register" | "done">("idle");
   const [error, setError] = useState<string | null>(null);
+
+  const contractAddress = getContractAddress(tld);
+  const abi = getAbi(tld);
+  // For V2, use selected token; for V1, always pathUSD
+  const tokenAddress = isV2(tld) && paymentToken ? paymentToken : PATHUSD_ADDRESS;
 
   const {
     writeContract: writeApprove,
@@ -45,10 +57,10 @@ export function useRegister(name: string, years: number) {
     setStep("approve");
     writeApprove(
       {
-        address: PATHUSD_ADDRESS,
-        abi: PATHUSD_ABI,
+        address: tokenAddress as `0x${string}`,
+        abi: PATHUSD_ABI, // ERC20 approve is the same for all tokens
         functionName: "approve",
-        args: [TEMPO_NAME_SERVICE_ADDRESS, feeWei],
+        args: [contractAddress, feeWei],
         chainId: tempo.id,
       },
       {
@@ -58,20 +70,25 @@ export function useRegister(name: string, years: number) {
         },
       }
     );
-  }, [writeApprove, feeWei]);
+  }, [writeApprove, feeWei, tokenAddress, contractAddress]);
 
   const register = useCallback(() => {
     if (!address) return;
     setError(null);
     setStep("register");
+
+    const args = isV2(tld)
+      ? [name, BigInt(years), tokenAddress as `0x${string}`]
+      : [name, BigInt(years)];
+
     writeRegister(
       {
-        address: TEMPO_NAME_SERVICE_ADDRESS,
-        abi: TNS_ABI,
+        address: contractAddress,
+        abi,
         functionName: "register",
-        args: [name, BigInt(years)],
+        args,
         chainId: tempo.id,
-      },
+      } as any,
       {
         onSuccess: () => {
           setStep("done");
@@ -82,7 +99,7 @@ export function useRegister(name: string, years: number) {
         },
       }
     );
-  }, [writeRegister, name, address, years]);
+  }, [writeRegister, name, address, years, tld, tokenAddress, contractAddress, abi]);
 
   return {
     step,
@@ -96,8 +113,11 @@ export function useRegister(name: string, years: number) {
   };
 }
 
-export function useRenew(name: string) {
+export function useRenew(name: string, tld: TLD = "tempo", paymentToken?: `0x${string}`) {
   const [error, setError] = useState<string | null>(null);
+  const contractAddress = getContractAddress(tld);
+  const abi = getAbi(tld);
+  const tokenAddress = isV2(tld) && paymentToken ? paymentToken : undefined;
 
   const {
     writeContract,
@@ -110,27 +130,33 @@ export function useRenew(name: string) {
   const renew = useCallback(
     (years: number) => {
       setError(null);
+      const args = isV2(tld) && tokenAddress
+        ? [name, BigInt(years), tokenAddress]
+        : [name, BigInt(years)];
+
       writeContract(
         {
-          address: TEMPO_NAME_SERVICE_ADDRESS,
-          abi: TNS_ABI,
+          address: contractAddress,
+          abi,
           functionName: "renew",
-          args: [name, BigInt(years)],
+          args,
           chainId: tempo.id,
-        },
+        } as any,
         {
           onError: (err) => setError(err.message),
         }
       );
     },
-    [writeContract, name]
+    [writeContract, name, tld, tokenAddress, contractAddress, abi]
   );
 
   return { renew, isPending, isSuccess, error };
 }
 
-export function useTransfer(name: string) {
+export function useTransfer(name: string, tld: TLD = "tempo") {
   const [error, setError] = useState<string | null>(null);
+  const contractAddress = getContractAddress(tld);
+  const abi = getAbi(tld);
 
   const {
     writeContract,
@@ -145,8 +171,8 @@ export function useTransfer(name: string) {
       setError(null);
       writeContract(
         {
-          address: TEMPO_NAME_SERVICE_ADDRESS,
-          abi: TNS_ABI,
+          address: contractAddress,
+          abi,
           functionName: "transfer",
           args: [name, newOwner],
           chainId: tempo.id,
@@ -156,14 +182,16 @@ export function useTransfer(name: string) {
         }
       );
     },
-    [writeContract, name]
+    [writeContract, name, contractAddress, abi]
   );
 
   return { transfer, isPending, isSuccess, error };
 }
 
-export function useSetPrimaryName() {
+export function useSetPrimaryName(tld: TLD = "tempo") {
   const [error, setError] = useState<string | null>(null);
+  const contractAddress = getContractAddress(tld);
+  const abi = getAbi(tld);
 
   const {
     writeContract,
@@ -178,8 +206,8 @@ export function useSetPrimaryName() {
       setError(null);
       writeContract(
         {
-          address: TEMPO_NAME_SERVICE_ADDRESS,
-          abi: TNS_ABI,
+          address: contractAddress,
+          abi,
           functionName: "setPrimaryName",
           args: [name],
           chainId: tempo.id,
@@ -189,14 +217,16 @@ export function useSetPrimaryName() {
         }
       );
     },
-    [writeContract]
+    [writeContract, contractAddress, abi]
   );
 
   return { setPrimary, isPending, isSuccess, error };
 }
 
-export function useSetMetadata(name: string) {
+export function useSetMetadata(name: string, tld: TLD = "tempo") {
   const [error, setError] = useState<string | null>(null);
+  const contractAddress = getContractAddress(tld);
+  const abi = getAbi(tld);
 
   const {
     writeContract,
@@ -211,8 +241,8 @@ export function useSetMetadata(name: string) {
       setError(null);
       writeContract(
         {
-          address: TEMPO_NAME_SERVICE_ADDRESS,
-          abi: TNS_ABI,
+          address: contractAddress,
+          abi,
           functionName: "setMetadata",
           args: [name, key, value],
           chainId: tempo.id,
@@ -222,7 +252,7 @@ export function useSetMetadata(name: string) {
         }
       );
     },
-    [writeContract, name]
+    [writeContract, name, contractAddress, abi]
   );
 
   return { setMeta, isPending, isSuccess, error };

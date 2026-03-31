@@ -5,17 +5,18 @@ import { useAccount, useReadContracts } from "wagmi";
 import { WalletButton } from "@/components/WalletButton";
 import { useReverseLookup, usePathUSDBalance, useNamesOfOwner } from "@/hooks/useNameService";
 import { shortenAddress, formatPathUSD } from "@/lib/utils";
-import { TNS_ABI, TEMPO_NAME_SERVICE_ADDRESS } from "@/lib/contract";
+import { TNS_ABI, TNS_V2_ABI, TEMPO_NAME_SERVICE_ADDRESS, TLD, TLDS, getContractAddress, isV2 } from "@/lib/contract";
 import { tempo } from "@/lib/wagmi";
 import Link from "next/link";
 
-function useUserNames(address: string | undefined) {
-  const { names: ownedNames, isLoading: namesLoading } = useNamesOfOwner(address);
+function useUserNames(address: string | undefined, tld: TLD) {
+  const { names: ownedNames, isLoading: namesLoading } = useNamesOfOwner(address, tld);
+  const contractAddress = getContractAddress(tld);
+  const abi = isV2(tld) ? TNS_V2_ABI : TNS_ABI;
 
-  // Fetch expiry info for each owned name
   const contracts = ownedNames.map((name) => ({
-    address: TEMPO_NAME_SERVICE_ADDRESS,
-    abi: TNS_ABI,
+    address: contractAddress,
+    abi,
     functionName: "getNameInfo" as const,
     args: [name] as const,
     chainId: tempo.id,
@@ -47,8 +48,21 @@ export default function AccountPage() {
   const { address, isConnected } = useAccount();
   const { name: primaryName } = useReverseLookup(address);
   const { balance, isLoading: balanceLoading } = usePathUSDBalance(address);
-  const { names, isLoading: namesLoading } = useUserNames(address);
   const [mounted, setMounted] = useState(false);
+
+  // Load names from all TLDs
+  const tempoNames = useUserNames(address, "tempo");
+  const mppNames = useUserNames(address, "mpp");
+  const agentNames = useUserNames(address, "agent");
+  const aiNames = useUserNames(address, "ai");
+
+  const allNames = [
+    ...tempoNames.names.map((n) => ({ ...n, tld: "tempo" as TLD })),
+    ...mppNames.names.map((n) => ({ ...n, tld: "mpp" as TLD })),
+    ...agentNames.names.map((n) => ({ ...n, tld: "agent" as TLD })),
+    ...aiNames.names.map((n) => ({ ...n, tld: "ai" as TLD })),
+  ];
+  const namesLoading = tempoNames.isLoading || mppNames.isLoading || agentNames.isLoading || aiNames.isLoading;
 
   useEffect(() => {
     setMounted(true);
@@ -122,7 +136,7 @@ export default function AccountPage() {
             Primary Name
           </p>
           <Link
-            href={`/name/${primaryName}`}
+            href={`/name/${primaryName}?tld=tempo`}
             className="font-serif text-lg text-primary hover:opacity-70 transition-opacity"
           >
             {primaryName}.tempo →
@@ -140,21 +154,21 @@ export default function AccountPage() {
           <div className="p-8 bg-white border border-border text-center">
             <p className="text-sm text-tertiary">Loading names...</p>
           </div>
-        ) : names.length > 0 ? (
+        ) : allNames.length > 0 ? (
           <div className="space-y-[1px] bg-border">
-            {names.map((n) => (
+            {allNames.map((n) => (
               <Link
-                key={n.name}
-                href={`/name/${n.name}`}
+                key={`${n.name}.${n.tld}`}
+                href={`/name/${n.name}?tld=${n.tld}`}
                 className="block p-5 md:p-6 bg-white hover:border-primary
                            transition-colors group"
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3 flex-wrap">
                     <span className="font-serif text-lg text-primary group-hover:opacity-70 transition-opacity">
-                      {n.name}.tempo
+                      {n.name}.{n.tld}
                     </span>
-                    {primaryName === n.name && (
+                    {primaryName === n.name && n.tld === "tempo" && (
                       <span className="text-xs text-tertiary border border-border px-2 py-0.5">
                         Primary
                       </span>

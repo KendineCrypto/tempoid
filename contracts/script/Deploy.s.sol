@@ -6,7 +6,7 @@ import "../src/TempoNameService.sol";
 
 contract DeployTempoNameService is Script {
     // pathUSD address on Tempo
-    address constant PATHUSD = 0x20c0000000000000000000000000000000000000;
+    address constant PATHUSD = 0x20C0000000000000000000000000000000000000;
 
     function run() external {
         vm.startBroadcast();

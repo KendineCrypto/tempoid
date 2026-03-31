@@ -24,7 +24,7 @@ export default function MarketplacePage() {
           Marketplace
         </h1>
         <p className="text-sm text-tertiary">
-          ·Buy and sell .tempo names·
+          Buy and sell .tempo .mpp .agent .ai names
         </p>
       </div>
 
@@ -36,7 +36,7 @@ export default function MarketplacePage() {
             No names listed for sale yet
           </p>
           <p className="text-xs text-muted">
-            List your .tempo names from the{" "}
+            List your names from the{" "}
             <Link href="/account" className="text-primary hover:opacity-70">
               Account
             </Link>{" "}

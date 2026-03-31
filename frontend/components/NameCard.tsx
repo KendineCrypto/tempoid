@@ -5,22 +5,23 @@ import { shortenAddress, formatExpiry, getYearlyFeeDisplay, getOriginalFeeDispla
 
 interface NameCardProps {
   name: string;
+  tld?: string;
   owner?: string;
   expiry?: number;
   isAvailable?: boolean;
 }
 
-export function NameCard({ name, owner, expiry, isAvailable }: NameCardProps) {
+export function NameCard({ name, tld = "tempo", owner, expiry, isAvailable }: NameCardProps) {
   return (
     <Link
-      href={isAvailable ? `/register/${name}` : `/name/${name}`}
+      href={isAvailable ? `/register/${name}?tld=${tld}` : `/name/${name}?tld=${tld}`}
       className="block p-6 border border-border bg-white hover:border-primary
                  transition-colors group"
     >
       <div className="flex items-start justify-between">
         <div>
           <h3 className="text-lg font-serif text-primary group-hover:opacity-70 transition-opacity">
-            {name}.tempo
+            {name}.{tld}
           </h3>
           {owner && (
             <p className="text-xs text-tertiary mt-2 font-sans">

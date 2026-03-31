@@ -4,6 +4,46 @@ export const TEMPO_NAME_SERVICE_ADDRESS =
 export const PATHUSD_ADDRESS =
   "0x20c0000000000000000000000000000000000000" as const;
 
+// --- Multi-TLD Contracts (V2 — multi-token) ---
+export const TLD_CONTRACTS = {
+  tempo: "0x9A56AE2275C85aaB13533c00d2cfa42C619Bc3A9", // V1
+  mpp: "0xF37680Ef67a79359292C8073407a48d73579D1bF",   // V2
+  agent: "0x811dA77f95e38792992ECC62AE61631C5067740E", // V2
+  ai: "0xe2F63746dB8a1A40Bc400E9E3356296c24c52470",   // V2
+} as const;
+
+export type TLD = keyof typeof TLD_CONTRACTS;
+export const TLDS: TLD[] = ["tempo", "mpp", "agent", "ai"];
+
+export function getContractAddress(tld: TLD): `0x${string}` {
+  return TLD_CONTRACTS[tld] as `0x${string}`;
+}
+
+export function isV2(tld: TLD): boolean {
+  return tld !== "tempo";
+}
+
+// --- Token addresses (Tempo chain) ---
+export const TOKENS = {
+  pathUSD: "0x20c0000000000000000000000000000000000000",
+  "USDC.e": "0x20C000000000000000000000b9537d11c60E8b50",
+  USDT0: "0x20C00000000000000000000014f22CA97301EB73",
+} as const;
+
+export type TokenName = keyof typeof TOKENS;
+export const TOKEN_NAMES: TokenName[] = ["pathUSD", "USDC.e", "USDT0"];
+
+export function getTokenAddress(name: TokenName): `0x${string}` {
+  return TOKENS[name] as `0x${string}`;
+}
+
+// V2 tokens available for .mpp, .agent, .ai
+export const V2_PAYMENT_TOKENS = [
+  { name: "pathUSD" as const, address: TOKENS.pathUSD, decimals: 6 },
+  { name: "USDC.e" as const, address: TOKENS["USDC.e"], decimals: 6 },
+  { name: "USDT0" as const, address: TOKENS.USDT0, decimals: 6 },
+];
+
 export const PATHUSD_ABI = [
   {
     name: "approve",
@@ -281,6 +321,223 @@ export const TNS_ABI = [
       { name: "price", type: "uint256", indexed: false },
       { name: "fee", type: "uint256", indexed: false },
     ],
+  },
+] as const;
+
+// --- V2 ABI (multi-token: register/renew/listForSale have token param) ---
+export const TNS_V2_ABI = [
+  {
+    name: "register",
+    type: "function",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "name", type: "string" },
+      { name: "years_", type: "uint256" },
+      { name: "token", type: "address" },
+    ],
+    outputs: [],
+  },
+  {
+    name: "resolve",
+    type: "function",
+    stateMutability: "view",
+    inputs: [{ name: "name", type: "string" }],
+    outputs: [{ type: "address" }],
+  },
+  {
+    name: "reverseLookup",
+    type: "function",
+    stateMutability: "view",
+    inputs: [{ name: "owner", type: "address" }],
+    outputs: [{ type: "string" }],
+  },
+  {
+    name: "renew",
+    type: "function",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "name", type: "string" },
+      { name: "years_", type: "uint256" },
+      { name: "token", type: "address" },
+    ],
+    outputs: [],
+  },
+  {
+    name: "transfer",
+    type: "function",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "name", type: "string" },
+      { name: "newOwner", type: "address" },
+    ],
+    outputs: [],
+  },
+  {
+    name: "setPrimaryName",
+    type: "function",
+    stateMutability: "nonpayable",
+    inputs: [{ name: "name", type: "string" }],
+    outputs: [],
+  },
+  {
+    name: "clearPrimaryName",
+    type: "function",
+    stateMutability: "nonpayable",
+    inputs: [],
+    outputs: [],
+  },
+  {
+    name: "setMetadata",
+    type: "function",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "name", type: "string" },
+      { name: "key", type: "string" },
+      { name: "value", type: "string" },
+    ],
+    outputs: [],
+  },
+  {
+    name: "getNameInfo",
+    type: "function",
+    stateMutability: "view",
+    inputs: [{ name: "name", type: "string" }],
+    outputs: [
+      { name: "owner", type: "address" },
+      { name: "expiry", type: "uint256" },
+      { name: "isExpired", type: "bool" },
+      { name: "isAvailable", type: "bool" },
+    ],
+  },
+  {
+    name: "getMetadata",
+    type: "function",
+    stateMutability: "view",
+    inputs: [
+      { name: "name", type: "string" },
+      { name: "key", type: "string" },
+    ],
+    outputs: [{ type: "string" }],
+  },
+  {
+    name: "getRegistrationFee",
+    type: "function",
+    stateMutability: "view",
+    inputs: [
+      { name: "name", type: "string" },
+      { name: "years_", type: "uint256" },
+    ],
+    outputs: [{ type: "uint256" }],
+  },
+  {
+    name: "isNameAvailable",
+    type: "function",
+    stateMutability: "view",
+    inputs: [{ name: "name", type: "string" }],
+    outputs: [{ type: "bool" }],
+  },
+  {
+    name: "getNamesOfOwner",
+    type: "function",
+    stateMutability: "view",
+    inputs: [{ name: "addr", type: "address" }],
+    outputs: [{ type: "string[]" }],
+  },
+  {
+    name: "getNameCount",
+    type: "function",
+    stateMutability: "view",
+    inputs: [{ name: "addr", type: "address" }],
+    outputs: [{ type: "uint256" }],
+  },
+  {
+    name: "getGracePeriodRemaining",
+    type: "function",
+    stateMutability: "view",
+    inputs: [{ name: "name", type: "string" }],
+    outputs: [{ type: "uint256" }],
+  },
+  {
+    name: "getListings",
+    type: "function",
+    stateMutability: "view",
+    inputs: [
+      { name: "offset", type: "uint256" },
+      { name: "limit", type: "uint256" },
+    ],
+    outputs: [{ name: "names", type: "string[]" }],
+  },
+  {
+    name: "cleanExpiredListings",
+    type: "function",
+    stateMutability: "nonpayable",
+    inputs: [{ name: "maxClean", type: "uint256" }],
+    outputs: [],
+  },
+  {
+    name: "listForSale",
+    type: "function",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "name", type: "string" },
+      { name: "price", type: "uint256" },
+      { name: "token", type: "address" },
+    ],
+    outputs: [],
+  },
+  {
+    name: "cancelListing",
+    type: "function",
+    stateMutability: "nonpayable",
+    inputs: [{ name: "name", type: "string" }],
+    outputs: [],
+  },
+  {
+    name: "buyName",
+    type: "function",
+    stateMutability: "nonpayable",
+    inputs: [{ name: "name", type: "string" }],
+    outputs: [],
+  },
+  {
+    name: "getListing",
+    type: "function",
+    stateMutability: "view",
+    inputs: [{ name: "name", type: "string" }],
+    outputs: [
+      { name: "seller", type: "address" },
+      { name: "price", type: "uint256" },
+      { name: "priceToken", type: "address" },
+      { name: "active", type: "bool" },
+    ],
+  },
+  {
+    name: "getListingCount",
+    type: "function",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ type: "uint256" }],
+  },
+  {
+    name: "getListedNameByIndex",
+    type: "function",
+    stateMutability: "view",
+    inputs: [{ name: "index", type: "uint256" }],
+    outputs: [{ type: "string" }],
+  },
+  {
+    name: "getAcceptedTokens",
+    type: "function",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ type: "address[]" }],
+  },
+  {
+    name: "isTokenAccepted",
+    type: "function",
+    stateMutability: "view",
+    inputs: [{ name: "token", type: "address" }],
+    outputs: [{ type: "bool" }],
   },
 ] as const;
 
